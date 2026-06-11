@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react'
 import { Search, Download, Sparkles, AlertCircle, ArrowLeft, Ticket, CheckCircle2 } from 'lucide-react'
-import solibingoLogo from './assets/solibingo_hero.png'
+import horseWatermark from './assets/horse_watermark.png'
 import BingoCard from './components/BingoCard.jsx'
 
 // Utility function to draw rounded rectangles on HTML5 Canvas
@@ -106,117 +106,100 @@ export default function SearchApp() {
 
       const drawCard = (logoImgLoaded = null) => {
         // 1. Draw Background
-        const grad = ctx.createRadialGradient(300, 200, 50, 300, 425, 600)
-        grad.addColorStop(0, '#140d24')
-        grad.addColorStop(1, '#08050e')
+        const grad = ctx.createRadialGradient(300, 425, 100, 300, 425, 500)
+        grad.addColorStop(0, '#fdfaf5')
+        grad.addColorStop(1, '#ecdcc4')
         ctx.fillStyle = grad
         ctx.fillRect(0, 0, 600, 850)
 
         // Border
-        ctx.strokeStyle = '#6b21a8'
-        ctx.lineWidth = 6
-        drawRoundedRect(ctx, 3, 3, 594, 844, 25)
+        ctx.strokeStyle = '#8e6d4f'
+        ctx.lineWidth = 4
+        drawRoundedRect(ctx, 10, 10, 580, 830, 25)
         ctx.stroke()
 
+        // Inner dashed border
+        ctx.strokeStyle = 'rgba(142, 109, 79, 0.4)'
+        ctx.lineWidth = 1.5
+        ctx.setLineDash([4, 4])
+        drawRoundedRect(ctx, 16, 16, 568, 818, 20)
+        ctx.stroke()
+        ctx.setLineDash([]) // Reset dash
+
         // Corner dots
-        ctx.fillStyle = 'rgba(147, 51, 234, 0.6)'
-        const dots = [[15, 15], [585, 15], [15, 835], [585, 835]]
+        ctx.fillStyle = '#8e6d4f'
+        const dots = [[20, 20], [580, 20], [20, 830], [580, 830]]
         dots.forEach(([dx, dy]) => {
           ctx.beginPath()
-          ctx.arc(dx, dy, 3, 0, Math.PI * 2)
+          ctx.arc(dx, dy, 3.5, 0, Math.PI * 2)
           ctx.fill()
         })
 
-        // 2. Draw Header Panel
-        ctx.fillStyle = 'rgba(17, 9, 30, 0.8)'
-        ctx.strokeStyle = 'rgba(88, 28, 135, 0.6)'
-        ctx.lineWidth = 2
-        drawRoundedRect(ctx, 24, 24, 552, 110, 15)
-        ctx.fill()
-        ctx.stroke()
-
-        // Glowing Line in Header
-        ctx.strokeStyle = 'rgba(168, 85, 247, 0.3)'
-        ctx.lineWidth = 1
-        ctx.beginPath()
-        ctx.moveTo(40, 24)
-        ctx.lineTo(560, 24)
-        ctx.stroke()
-
         // Card Number on Top Left inside Header Panel
-        ctx.fillStyle = '#a855f7'
-        ctx.font = 'bold 11px monospace'
+        ctx.fillStyle = '#542813'
+        ctx.font = 'bold 16px Georgia, serif'
         ctx.textAlign = 'left'
-        ctx.fillText(`N° ${ticket.ticket_number}`, 36, 42)
+        ctx.fillText(`Nº ${ticket.ticket_number}`, 32, 45)
 
         // Title
-        ctx.font = 'bold 38px Georgia, serif'
-        ctx.fillStyle = '#efeaf6'
+        ctx.font = 'bold 50px Georgia, serif'
+        ctx.fillStyle = '#542813'
         ctx.textAlign = 'center'
-        ctx.shadowColor = 'rgba(168, 85, 247, 0.4)'
-        ctx.shadowBlur = 10
-        ctx.fillText('BINGO BLACK', 300, 72)
+        ctx.shadowColor = 'rgba(84, 40, 19, 0.2)'
+        ctx.shadowBlur = 6
+        ctx.fillText('BINGO', 300, 95)
+        ctx.fillText('CHAQUEÑO', 300, 142)
         ctx.shadowBlur = 0 // reset
 
         // Subtitle
-        ctx.fillStyle = 'rgba(126, 34, 206, 0.8)'
-        ctx.font = '16px Georgia, serif'
-        ctx.fillText('❀', 180, 110)
-        ctx.fillText('❀', 420, 110)
+        ctx.fillStyle = '#8e6d4f'
+        ctx.font = '20px Georgia, serif'
+        ctx.fillText('✿', 160, 182)
+        ctx.fillText('✿', 440, 182)
         
-        ctx.strokeStyle = 'rgba(88, 28, 135, 0.6)'
+        ctx.strokeStyle = 'rgba(142, 109, 79, 0.4)'
         ctx.lineWidth = 1.5
         ctx.beginPath()
-        ctx.moveTo(200, 105)
-        ctx.lineTo(260, 105)
-        ctx.moveTo(340, 105)
-        ctx.lineTo(400, 105)
+        ctx.moveTo(185, 175)
+        ctx.lineTo(245, 175)
+        ctx.moveTo(355, 175)
+        ctx.lineTo(415, 175)
         ctx.stroke()
 
-        ctx.fillStyle = '#c084fc'
-        ctx.font = 'bold 13px Georgia, serif'
-        ctx.fillText('3 × 15', 300, 110)
+        ctx.fillStyle = '#542813'
+        ctx.font = 'bold 15px Georgia, serif'
+        ctx.fillText('3 × 15', 300, 180)
 
         // 3. Draw BINGO Column Headers Bar
-        ctx.fillStyle = '#201c27'
-        ctx.strokeStyle = 'rgba(88, 28, 135, 0.5)'
-        ctx.lineWidth = 1.5
-        drawRoundedRect(ctx, 24, 152, 552, 45, 10)
-        ctx.fill()
+        const hRowY = 210
+        const mW = 552
+        const cW = mW / 5
+        const cH = 100
+
+        ctx.strokeStyle = 'rgba(142, 109, 79, 0.3)'
+        ctx.lineWidth = 2
+        ctx.beginPath()
+        ctx.moveTo(24, hRowY)
+        ctx.lineTo(576, hRowY)
+        ctx.moveTo(24, hRowY + 38)
+        ctx.lineTo(576, hRowY + 38)
         ctx.stroke()
 
         const BINGO_LETTERS = ['B', 'I', 'N', 'G', 'O']
-        const cW = 552 / 5
         BINGO_LETTERS.forEach((l, i) => {
-          ctx.fillStyle = '#d8b4fe'
-          ctx.font = 'bold 24px Georgia, serif'
+          ctx.fillStyle = '#542813'
+          ctx.font = 'bold 26px Georgia, serif'
           ctx.textAlign = 'center'
-          ctx.fillText(l, 24 + i * cW + cW / 2, 184)
-          if (i > 0) {
-            ctx.strokeStyle = 'rgba(59, 7, 105, 0.4)'
-            ctx.lineWidth = 1.5
-            ctx.beginPath()
-            ctx.moveTo(24 + i * cW, 156)
-            ctx.lineTo(24 + i * cW, 193)
-            ctx.stroke()
-          }
+          ctx.fillText(l, 24 + i * cW + cW / 2, hRowY + 28)
         })
-
-        // 4. Draw Grid Container
-        ctx.fillStyle = '#09070f'
-        ctx.strokeStyle = 'rgba(88, 28, 135, 0.5)'
-        ctx.lineWidth = 1.5
-        drawRoundedRect(ctx, 24, 212, 552, 552, 18)
-        ctx.fill()
-        ctx.stroke()
 
         // Draw Watermark Logo if loaded
         if (logoImgLoaded) {
           ctx.save()
-          ctx.globalAlpha = 0.08
-          const wmW = 552 * 0.78
-          const wmH = wmW * (logoImgLoaded.height / logoImgLoaded.width)
-          ctx.drawImage(logoImgLoaded, 300 - wmW/2, 488 - wmH/2, wmW, wmH)
+          ctx.globalAlpha = 0.16
+          const wmW = 552 * 0.85
+          const wmH = wmW // Square watermark
+          ctx.drawImage(logoImgLoaded, 300 - wmW/2, 531 - wmH/2, wmW, wmH)
           ctx.restore()
         }
 
@@ -225,7 +208,7 @@ export default function SearchApp() {
         const cellH = 100
         const gap = 8
         const startX = 24 + 10 // padding
-        const startY = 212 + 10
+        const startY = 265
 
         for (let r = 0; r < 5; r++) {
           for (let c = 0; c < 5; c++) {
@@ -235,68 +218,51 @@ export default function SearchApp() {
             const free = val === 0
 
             // Fill
-            if (free) {
-              const gradCell = ctx.createRadialGradient(cX + cellW/2, cY + cellH/2, 5, cX + cellW/2, cY + cellH/2, 50)
-              gradCell.addColorStop(0, '#25123d')
-              gradCell.addColorStop(1, '#11071c')
-              ctx.fillStyle = gradCell
-              ctx.strokeStyle = '#a855f7'
-            } else {
-              const gradCell = ctx.createRadialGradient(cX + cellW/2, cY + cellH/2, 5, cX + cellW/2, cY + cellH/2, 50)
-              gradCell.addColorStop(0, '#221d2a')
-              gradCell.addColorStop(1, '#15121b')
-              ctx.fillStyle = gradCell
-              ctx.strokeStyle = '#4a2176'
-            }
+            ctx.fillStyle = free ? 'rgba(253, 251, 247, 0.65)' : 'rgba(253, 251, 247, 0.82)'
+            ctx.strokeStyle = free ? '#8e6d4f' : '#c8b9a6'
             ctx.lineWidth = 2
             drawRoundedRect(ctx, cX, cY, cellW, cellH, 12)
             ctx.fill()
             ctx.stroke()
 
             // Nested inner thin border
-            ctx.strokeStyle = 'rgba(59, 7, 105, 0.3)'
+            ctx.strokeStyle = 'rgba(142, 109, 79, 0.15)'
             ctx.lineWidth = 1
             drawRoundedRect(ctx, cX + 2, cY + 2, cellW - 4, cellH - 4, 10)
             ctx.stroke()
 
             // Text
             if (free) {
-              ctx.fillStyle = '#d8b4fe'
-              ctx.font = 'bold 20px Georgia, serif'
-              ctx.fillText('▲', cX + cellW/2, cY + 34)
+              ctx.fillStyle = '#8e6d4f'
+              ctx.font = 'bold 22px Georgia, serif'
+              ctx.fillText('▲', cX + cellW/2, cY + 32)
+              ctx.fillStyle = '#542813'
               ctx.font = 'bold 11px Georgia, serif'
               ctx.fillText('FREE', cX + cellW/2, cY + 54)
-              ctx.font = 'bold 20px Georgia, serif'
-              ctx.fillText('▼', cX + cellW/2, cY + 74)
+              ctx.fillStyle = '#8e6d4f'
+              ctx.font = 'bold 22px Georgia, serif'
+              ctx.fillText('▼', cX + cellW/2, cY + 76)
             } else {
-              ctx.fillStyle = '#efeaf6'
-              ctx.font = 'bold 30px Georgia, serif'
-              ctx.fillText(String(val), cX + cellW/2, cY + cellH/2 + 10)
+              ctx.fillStyle = '#542813'
+              ctx.font = 'bold 32px Georgia, serif'
+              ctx.fillText(String(val), cX + cellW/2, cY + cellH/2 + 11)
             }
           }
         }
 
         // 5. Draw Footer divider & text
-        ctx.strokeStyle = 'rgba(59, 7, 105, 0.6)'
+        ctx.strokeStyle = 'rgba(142, 109, 79, 0.25)'
         ctx.lineWidth = 1.5
         ctx.beginPath()
-        ctx.moveTo(24, 782)
-        ctx.lineTo(576, 782)
+        ctx.moveTo(30, 808)
+        ctx.lineTo(570, 808)
         ctx.stroke()
 
-        // Pulse dot
-        ctx.fillStyle = '#9333ea'
-        ctx.beginPath()
-        ctx.arc(34, 808, 4, 0, Math.PI * 2)
-        ctx.fill()
-
         // Text
-        ctx.fillStyle = 'rgba(168, 85, 247, 0.8)'
+        ctx.fillStyle = '#8e6d4f'
         ctx.font = 'bold 12px Georgia, serif'
-        ctx.textAlign = 'left'
-        ctx.fillText('BLACK 75 EDITION', 48, 812)
-
-
+        ctx.textAlign = 'center'
+        ctx.fillText('♦ BLACK 75 EDITION', 300, 826)
 
         // Trigger file download
         const dataUrl = canvas.toDataURL('image/png')
@@ -335,7 +301,7 @@ export default function SearchApp() {
         // Fallback immediately to drawing without watermark logo if loading fails
         drawCard(null)
       }
-      logoImg.src = solibingoLogo
+      logoImg.src = horseWatermark
 
     } catch (err) {
       alert('Error al generar la imagen del cartón: ' + err.message)

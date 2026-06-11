@@ -1,6 +1,38 @@
-import { Play, FileJson, Printer, Sparkles, BarChart3 } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Play, FileJson, Printer, Sparkles, BarChart3, ShieldAlert } from 'lucide-react'
 
 export default function Home() {
+  const [superAdminInput, setSuperAdminInput] = useState('')
+  const [saveSuccess, setSaveSuccess] = useState(false)
+
+  useEffect(() => {
+    fetch('/api/super-admins')
+      .then(r => r.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          setSuperAdminInput(data.join(', '))
+        }
+      })
+      .catch(() => {})
+  }, [])
+
+  const handleSaveSuperAdmins = () => {
+    const list = superAdminInput.split(/[\n,\s;]+/).map(x => x.replace(/\D/g, '').trim()).filter(Boolean)
+    fetch('/api/super-admins', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(list)
+    })
+      .then(r => r.json())
+      .then(res => {
+        if (res.success) {
+          setSaveSuccess(true)
+          setTimeout(() => setSaveSuccess(false), 3000)
+        }
+      })
+      .catch(err => alert('Error al guardar: ' + err.message))
+  }
+
   const options = [
     {
       title: "Tablero de Presentador",
@@ -77,6 +109,37 @@ export default function Home() {
                </div>
             </a>
           ))}
+        </div>
+
+        {/* Super Admin WhatsApp Bot Settings */}
+        <div className="mt-16 bg-[#0e0524]/60 backdrop-blur-xl border border-[#221443] rounded-3xl p-8 shadow-[0_20px_50px_rgba(0,0,0,0.3)]">
+          <div className="flex items-center gap-3 mb-6">
+             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg">
+                <ShieldAlert className="w-5 h-5 text-white" />
+             </div>
+             <div>
+                <h2 className="text-2xl font-black text-white leading-tight">Habilitación de Súper Administrador (Bot WhatsApp)</h2>
+                <p className="text-text-muted text-sm mt-0.5">Define los números de WhatsApp autorizados para ejecutar comandos de registro, filas y asignación.</p>
+             </div>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-4">
+             <input
+                type="text"
+                value={superAdminInput}
+                onChange={(e) => setSuperAdminInput(e.target.value)}
+                placeholder="Ej. 59178240880, 59170000000"
+                className="flex-1 h-12 bg-[#180c35]/50 border border-[#221443] rounded-xl px-4 text-sm text-white placeholder:text-[#7c7297]/30 focus:outline-none focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500/50 transition-all"
+             />
+             <button
+                onClick={handleSaveSuperAdmins}
+                className="h-12 px-6 bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-400 hover:to-indigo-500 text-white font-black text-xs uppercase tracking-widest rounded-xl shadow-lg shadow-purple-500/15 hover:shadow-purple-500/30 hover:scale-[1.01] active:scale-[0.99] transition-all cursor-pointer flex items-center justify-center gap-2"
+             >
+                Guardar Súper Admins
+             </button>
+          </div>
+          {saveSuccess && (
+             <p className="text-emerald-400 text-xs font-bold mt-3 animate-pulse">✓ Configuración guardada e inmediatamente activa en el Bot.</p>
+          )}
         </div>
         
         {/* Footer */}

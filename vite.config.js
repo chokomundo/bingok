@@ -87,6 +87,97 @@ function bingoApiPlugin() {
       return
     }
 
+    // 5. Save Authorized IDs
+    if (req.url === '/api/save-authorized-ids' && req.method === 'POST') {
+      let body = ''
+      req.on('data', chunk => { body += chunk })
+      req.on('end', () => {
+        try {
+          const ids = JSON.parse(body)
+          if (Array.isArray(ids)) {
+            const filePath = path.resolve('public/bingo_authorized_ids.json')
+            fs.writeFileSync(filePath, JSON.stringify(ids, null, 2))
+            res.writeHead(200, { 'Content-Type': 'application/json' })
+            res.end(JSON.stringify({ success: true }))
+          } else {
+            res.writeHead(400, { 'Content-Type': 'application/json' })
+            res.end(JSON.stringify({ error: 'Invalid array structure' }))
+          }
+        } catch (e) {
+          res.writeHead(400, { 'Content-Type': 'application/json' })
+          res.end(JSON.stringify({ error: 'Invalid payload' }))
+        }
+      })
+      return
+    }
+
+    // 6. Save Distributed Seller Rows
+    if (req.url === '/api/save-seller-rows' && req.method === 'POST') {
+      let body = ''
+      req.on('data', chunk => { body += chunk })
+      req.on('end', () => {
+        try {
+          const rows = JSON.parse(body)
+          if (Array.isArray(rows)) {
+            const filePath = path.resolve('public/bingo_seller_rows.json')
+            fs.writeFileSync(filePath, JSON.stringify(rows, null, 2))
+            res.writeHead(200, { 'Content-Type': 'application/json' })
+            res.end(JSON.stringify({ success: true }))
+          } else {
+            res.writeHead(400, { 'Content-Type': 'application/json' })
+            res.end(JSON.stringify({ error: 'Invalid array structure' }))
+          }
+        } catch (e) {
+          res.writeHead(400, { 'Content-Type': 'application/json' })
+          res.end(JSON.stringify({ error: 'Invalid payload' }))
+        }
+      })
+      return
+    }
+
+    // 7. Get Super Admins
+    if (req.url === '/api/super-admins' && req.method === 'GET') {
+      try {
+        const filePath = path.resolve('public/bingo_super_admins.json')
+        if (fs.existsSync(filePath)) {
+          const data = fs.readFileSync(filePath, 'utf8')
+          res.writeHead(200, { 'Content-Type': 'application/json' })
+          res.end(data)
+        } else {
+          res.writeHead(200, { 'Content-Type': 'application/json' })
+          res.end(JSON.stringify([]))
+        }
+      } catch (e) {
+        res.writeHead(500, { 'Content-Type': 'application/json' })
+        res.end(JSON.stringify({ error: e.message }))
+      }
+      return
+    }
+
+    // 8. Save Super Admins
+    if (req.url === '/api/super-admins' && req.method === 'POST') {
+      let body = ''
+      req.on('data', chunk => { body += chunk })
+      req.on('end', () => {
+        try {
+          const list = JSON.parse(body)
+          if (Array.isArray(list)) {
+            const filePath = path.resolve('public/bingo_super_admins.json')
+            fs.writeFileSync(filePath, JSON.stringify(list, null, 2))
+            res.writeHead(200, { 'Content-Type': 'application/json' })
+            res.end(JSON.stringify({ success: true }))
+          } else {
+            res.writeHead(400, { 'Content-Type': 'application/json' })
+            res.end(JSON.stringify({ error: 'Invalid array structure' }))
+          }
+        } catch (e) {
+          res.writeHead(400, { 'Content-Type': 'application/json' })
+          res.end(JSON.stringify({ error: 'Invalid payload' }))
+        }
+      })
+      return
+    }
+
     next()
   }
 
@@ -105,6 +196,9 @@ export default defineConfig({
   plugins: [react(), tailwindcss(), bingoApiPlugin()],
   server: {
     host: true,
+    watch: {
+      ignored: ['**/public/bingo_*.json']
+    }
   },
   preview: {
     host: true,

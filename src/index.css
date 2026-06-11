@@ -107,3 +107,23 @@
 ::-webkit-scrollbar-thumb:hover {
   background: var(--color-accent);
 }
+
+/* Animación de Línea Ganadora Premium (Vertical, Horizontal y Doble) */
+@keyframes winning-line-pulse {
+  0%, 100% {
+    transform: scale(1.03);
+    background-color: #10b981;
+    box-shadow: 0 0 15px rgba(16, 185, 129, 0.8), inset 0 0 10px rgba(255, 255, 255, 0.4);
+    border-color: #ffffff;
+  }
+  50% {
+    transform: scale(1.14);
+    background-color: #10b981;
+    box-shadow: 0 0 25px rgba(16, 185, 129, 1), 0 0 40px rgba(234, 179, 8, 0.8), inset 0 0 15px rgba(255, 255, 255, 0.7);
+    border-color: #eab308;
+  }
+}
+
+.animate-winning-line {
+  animation: winning-line-pulse 1.2s ease-in-out infinite;
+}

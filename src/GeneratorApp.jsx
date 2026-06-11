@@ -1,6 +1,5 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Database, Download, LayoutGrid, Star, Home, RefreshCw } from 'lucide-react'
-import solibingoLogo from './assets/solibingo_hero.png'
 import BingoCard from './components/BingoCard.jsx'
 
 // Utilidades de BINGO
@@ -40,6 +39,8 @@ export default function GeneratorApp() {
   const [count, setCount] = useState(1000)
   const [tickets, setTickets] = useState([])
   const [isGenerating, setIsGenerating] = useState(false)
+  const [isSynced, setIsSynced] = useState(false)
+  const [syncError, setSyncError] = useState(null)
 
   const handleGenerate = () => {
     setIsGenerating(true)
@@ -69,6 +70,87 @@ export default function GeneratorApp() {
     a.click()
     URL.revokeObjectURL(url)
   }
+
+  const handleFileUpload = (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = (event) => {
+      try {
+        const data = JSON.parse(event.target.result)
+        if (Array.isArray(data) && data.length > 0 && data[0].ticket_number && data[0].matrix) {
+          setTickets(data)
+        } else {
+          alert('El archivo no tiene el formato correcto de cartones de Bingo Black.')
+        }
+      } catch (err) {
+        alert('Error al leer el archivo JSON.')
+      }
+      e.target.value = null // resetear input
+    }
+    reader.readAsText(file)
+  }
+
+  // --- AUTOMATIC TICKET DATABASE SYNC WITH BOT SERVER & CENTRAL FILES ---
+  useEffect(() => {
+    if (tickets.length > 0) {
+      setIsSynced(false);
+      setSyncError(null);
+      
+      // 1. Guardar en localStorage para actualización inmediata en Panel de Ventas y Buscador
+      try {
+        localStorage.setItem('bingo_tickets_json', JSON.stringify(tickets));
+        console.log('[Local Storage Sync] Cartones guardados localmente para Panel de Ventas.');
+      } catch (err) {
+        console.warn('[Sync Storage Warning] Exceso de cuota en almacenamiento local:', err);
+      }
+      
+      // 2. Sincronizar con el backend de Vite (actualiza public/bingo_tickets.json para el Panel de Ventas y descarga)
+      fetch('/api/upload-json', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(tickets)
+      })
+      .then(res => res.json())
+      .then(resData => {
+        console.log('[Web Sync] Cartones escritos exitosamente en public/bingo_tickets.json en disco:', resData);
+      })
+      .catch(err => {
+        console.warn('[Web Sync Error] No se pudo escribir en disco mediante Vite:', err);
+      });
+
+      // 3. Sincronizar con el Servidor API Express (Puerto 5000 - Bot de WhatsApp)
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      
+      const syncTimeout = setTimeout(() => {
+        fetch(`${API_URL}/api/tickets`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ tickets })
+        })
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            setIsSynced(true);
+            console.log('[Bot Sync] Cartones sincronizados con el bot de WhatsApp exitosamente.');
+          } else {
+            setSyncError('El servidor de bot retornó un error de sincronización.');
+          }
+        })
+        .catch(err => {
+          console.warn('[Bot Sync Error] No se pudo conectar con el servidor bot:', err.message);
+          setSyncError('El bot no está disponible. Levanta el backend con npm start en /server.');
+        });
+      }, 500);
+
+      return () => clearTimeout(syncTimeout);
+    } else {
+      setIsSynced(false);
+      setSyncError(null);
+    }
+  }, [tickets]);
 
   const handleGoHome = () => {
     window.location.hash = ''
@@ -135,19 +217,57 @@ export default function GeneratorApp() {
             {isGenerating ? 'GENERANDO...' : 'GENERAR CARTONES'}
           </button>
 
+          <div className="relative flex py-2 items-center">
+            <div className="flex-grow border-t border-[#221443]/50"></div>
+            <span className="flex-shrink mx-4 text-xs text-text-muted/50 font-bold uppercase tracking-widest">O TAMBIÉN</span>
+            <div className="flex-grow border-t border-[#221443]/50"></div>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-semibold text-text-muted text-center">
+              ¿Ya tienes cartones? Sube tu archivo JSON para el bot
+            </label>
+            <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-[#221443] hover:border-primary/60 rounded-xl cursor-pointer hover:bg-primary/5 transition-all">
+              <div className="flex flex-col items-center justify-center pt-2">
+                <Database className="w-5 h-5 text-primary mb-1" />
+                <p className="text-xs font-bold text-text mb-0.5">Sincronizar archivo bingo_tickets.json</p>
+                <p className="text-[10px] text-text-muted/60">Haz clic para buscar tu archivo JSON</p>
+              </div>
+              <input type="file" accept=".json" onChange={handleFileUpload} className="hidden" />
+            </label>
+          </div>
+
           {tickets.length > 0 && (
             <div className="pt-4 border-t border-border animate-fade-in flex flex-col gap-3">
               <div className="flex items-center justify-between px-2 text-sm">
-                <span className="text-text-muted">Cartones creados:</span>
+                <span className="text-text-muted">Cartones cargados:</span>
                 <span className="font-bold text-success">{tickets.length}</span>
               </div>
+              
               <button
                 onClick={handleDownload}
-                className="w-full h-14 bg-success/20 border border-success/30 text-success font-bold text-lg rounded-xl hover:bg-success/30 hover:shadow-[0_0_15px_rgba(34,197,94,0.2)] active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full h-14 bg-success/10 border border-success/20 text-success font-bold text-lg rounded-xl hover:bg-success/20 hover:shadow-[0_0_15px_rgba(34,197,94,0.15)] active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
                 <Download className="w-6 h-6" />
                 Descargar bingo_tickets.json
               </button>
+
+              {isSynced ? (
+                <div className="flex items-center justify-center gap-2.5 text-success bg-success/10 border border-success/20 px-4 py-3 rounded-xl font-bold text-xs">
+                  <span className="w-2 h-2 bg-success rounded-full animate-pulse"></span>
+                  ¡{tickets.length} Cartones sincronizados con el Bot de WhatsApp!
+                </div>
+              ) : syncError ? (
+                <div className="flex flex-col items-center justify-center gap-1 text-amber-500 bg-amber-500/5 border border-amber-500/20 px-4 py-3 rounded-xl font-medium text-[11px] text-center">
+                  <p className="font-bold">⚠️ Sincronización pendiente con el Bot:</p>
+                  <p className="opacity-80">{syncError}</p>
+                </div>
+              ) : (
+                <div className="flex items-center justify-center gap-2 text-text-muted bg-surface-light border border-border/40 px-4 py-3 rounded-xl font-medium text-xs">
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  Sincronizando cartones con el Bot de WhatsApp...
+                </div>
+              )}
             </div>
           )}
         </div>

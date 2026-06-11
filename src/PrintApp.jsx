@@ -1,18 +1,10 @@
 import { useState } from 'react'
 import { FileUp, Download, Home } from 'lucide-react'
 import { jsPDF } from 'jspdf'
-import solibingoLogo from './assets/solibingo_hero.png'
+import horseWatermark from './assets/horse_watermark.png'
 import BingoCard from './components/BingoCard.jsx'
 
 const BINGO_LETTERS = ['B', 'I', 'N', 'G', 'O']
-
-// PDF: same colors as RGB arrays
-const HEADER_COLORS_PDF = [
-  [220, 31, 60], [255, 140, 0], [34, 197, 94], [6, 182, 212], [139, 92, 246]
-]
-const TITLE_COLORS_PDF = [
-  [255, 87, 87], [255, 215, 0], [76, 217, 100], [90, 200, 250], [191, 127, 255]
-]
 
 export default function PrintApp() {
   const [tickets, setTickets] = useState([])
@@ -50,7 +42,7 @@ export default function PrintApp() {
   const handleGeneratePDF = async () => {
     setIsGenerating(true)
     try {
-      const logoB64 = await loadImageAsBase64(solibingoLogo)
+      const logoB64 = await loadImageAsBase64(horseWatermark)
       const doc = new jsPDF('p', 'mm', 'a4')
       const PW = doc.internal.pageSize.getWidth()  // 210mm
 
@@ -71,60 +63,84 @@ export default function PrintApp() {
         const ticket = tickets[idx]
 
         // ── Card background ──
-        doc.setFillColor(15, 13, 21) // Near black
-        doc.setDrawColor(107, 33, 168) // Purple-800
-        doc.setLineWidth(2.0)
+        doc.setFillColor(251, 246, 235) // Warm cream/parchment background color
+        doc.setDrawColor(142, 109, 79) // Sepia/brown border
+        doc.setLineWidth(1.2)
         doc.roundedRect(X, Y, TW, TH, 6, 6, 'FD')
+
+        // ── Inner dashed border ──
+        doc.setDrawColor(142, 109, 79)
+        doc.setLineWidth(0.3)
+        doc.setLineDashPattern([2, 2], 0)
+        doc.roundedRect(X + 2, Y + 2, TW - 4, TH - 4, 5, 5, 'D')
+        doc.setLineDashPattern([], 0) // reset dash pattern
+
+        // Decorative corner dots
+        doc.setFillColor(142, 109, 79)
+        doc.circle(X + 3.5, Y + 3.5, 0.6, 'F')
+        doc.circle(X + TW - 3.5, Y + 3.5, 0.6, 'F')
+        doc.circle(X + 3.5, Y + TH - 3.5, 0.6, 'F')
+        doc.circle(X + TW - 3.5, Y + TH - 3.5, 0.6, 'F')
 
         const pad = 4
         const headH = 20
 
-        // ── Header Panel ──
-        doc.setFillColor(25, 20, 35) // Deep purple-black
-        doc.setDrawColor(88, 28, 135) // Purple-900
-        doc.setLineWidth(0.4)
-        doc.roundedRect(X + pad, Y + pad, TW - pad * 2, headH, 3.5, 3.5, 'FD')
-
         // ── Header Card Number Top Left ──
-        doc.setTextColor(168, 85, 247) // Purple-400
+        doc.setTextColor(84, 40, 19) // Dark brown
         doc.setFont('times', 'bold')
-        doc.setFontSize(7.5)
-        doc.text(`N° ${ticket.ticket_number}`, X + pad + 2.5, Y + pad + 3.2)
+        doc.setFontSize(8)
+        doc.text(`Nº ${ticket.ticket_number}`, X + 4, Y + 6)
 
         // ── Header Title text ──
-        doc.setTextColor(239, 234, 246) // Creamy white
+        doc.setTextColor(84, 40, 19)
         doc.setFont('times', 'bold')
+        doc.setFontSize(22)
+        doc.text('BINGO', X + TW / 2, Y + 13, { align: 'center' })
+
         doc.setFontSize(18)
-        doc.text('BINGO BLACK', X + TW / 2, Y + pad + 7.5, { align: 'center' })
+        doc.text('CHAQUEÑO', X + TW / 2, Y + 20, { align: 'center' })
 
         // ── Header Subtitle text "3 x 15" ──
-        doc.setTextColor(168, 85, 247) // Purple-400
-        doc.setFont('times', 'italic')
-        doc.setFontSize(8.5)
-        doc.text('❀   3 x 15   ❀', X + TW / 2, Y + pad + 14, { align: 'center' })
+        doc.setFontSize(8)
+        doc.text('✿   3 x 15   ✿', X + TW / 2, Y + 24.5, { align: 'center' })
+
+        // Thin line dividers on the sides of the subtitle
+        doc.setDrawColor(142, 109, 79)
+        doc.setLineWidth(0.15)
+        doc.line(X + 12, Y + 24, X + TW/2 - 10, Y + 24)
+        doc.line(X + TW/2 + 10, Y + 24, X + TW - 12, Y + 24)
 
         // ── BINGO letter header row ──
-        const hRowY = Y + pad + headH + 3
+        const hRowY = Y + 28
         const mW = TW - pad * 2
         const cW = mW / 5
         const cH = 15 // cell height
 
-        doc.setFillColor(32, 28, 39) // Gray header background
-        doc.setDrawColor(88, 28, 135) // Purple-900
-        doc.setLineWidth(0.4)
-        doc.roundedRect(X + pad, hRowY, mW, 8.5, 2, 2, 'FD')
+        doc.setDrawColor(142, 109, 79)
+        doc.setLineWidth(0.25)
+        doc.line(X + pad, hRowY, X + TW - pad, hRowY)
+        doc.line(X + pad, hRowY + 6.5, X + TW - pad, hRowY + 6.5)
 
         BINGO_LETTERS.forEach((l, i) => {
           const hX = X + pad + i * cW
-          doc.setTextColor(216, 180, 254) // Purple-300
+          doc.setTextColor(84, 40, 19)
           doc.setFont('times', 'bold')
           doc.setFontSize(11)
-          doc.text(l, hX + cW / 2, hRowY + 6, { align: 'center' })
+          doc.text(l, hX + cW / 2, hRowY + 4.8, { align: 'center' })
         })
 
-        // ── Number grid ──
-        const gridY = hRowY + 11
+        // ── Watermark behind numbers ──
+        const gridY = hRowY + 9
+        const gridH = 5 * cH
+        const wmW = TW * 0.72, wmH = wmW // Square watermark
+        const wmX = X + (TW - wmW) / 2
+        const wmY2 = gridY + (gridH - wmH) / 2
+        doc.saveGraphicsState()
+        doc.setGState(doc.GState({ opacity: 0.16 }))
+        doc.addImage(logoB64, 'PNG', wmX, wmY2, wmW, wmH)
+        doc.restoreGraphicsState()
 
+        // ── Number grid ──
         for (let r = 0; r < 5; r++) {
           for (let c = 0; c < 5; c++) {
             const val = ticket.matrix[r][c]
@@ -132,54 +148,46 @@ export default function PrintApp() {
             const cY = gridY + r * cH
             const free = val === 0
 
-            if (free) {
-              doc.setFillColor(37, 18, 61) // Deep purple
-              doc.setDrawColor(168, 85, 247) // Purple-400
-            } else {
-              doc.setFillColor(34, 29, 42) // Dark charcoal
-              doc.setDrawColor(74, 33, 118) // Purple-700
-            }
-            doc.setLineWidth(0.5)
-            doc.roundedRect(cX + 0.8, cY + 0.8, cW - 1.6, cH - 1.6, 2.5, 2.5, 'FD')
+            // Fill cell with soft parchment color
+            doc.setFillColor(253, 250, 245)
+            doc.setDrawColor(200, 185, 166)
+            doc.setLineWidth(0.4)
+            doc.roundedRect(cX + 0.8, cY + 0.8, cW - 1.6, cH - 1.6, 2.0, 2.0, 'FD')
 
-            // Nested inner border for depth
-            doc.setDrawColor(15, 10, 25, 30)
-            doc.setLineWidth(0.2)
-            doc.roundedRect(cX + 1.4, cY + 1.4, cW - 2.8, cH - 2.8, 2.0, 2.0, 'D')
+            // Nested inner border
+            doc.setDrawColor(142, 109, 79, 20)
+            doc.setLineWidth(0.15)
+            doc.roundedRect(cX + 1.2, cY + 1.2, cW - 2.8, cH - 2.8, 1.6, 1.6, 'D')
 
             if (free) {
-              doc.setTextColor(216, 180, 254) // Purple-300
+              doc.setTextColor(142, 109, 79)
               doc.setFont('times', 'bold')
-              doc.setFontSize(11); doc.text('▲', cX + cW/2, cY + 5.0, { align: 'center' })
-              doc.setFontSize(6.0); doc.text('FREE', cX + cW/2, cY + 8.5, { align: 'center' })
-              doc.setFontSize(11); doc.text('▼', cX + cW/2, cY + 13.0, { align: 'center' })
+              doc.setFontSize(9); doc.text('▲', cX + cW/2, cY + 4.8, { align: 'center' })
+              
+              doc.setTextColor(84, 40, 19)
+              doc.setFontSize(5.5); doc.text('FREE', cX + cW/2, cY + 8.2, { align: 'center' })
+              
+              doc.setTextColor(142, 109, 79)
+              doc.setFontSize(9); doc.text('▼', cX + cW/2, cY + 12.5, { align: 'center' })
             } else {
-              doc.setTextColor(239, 234, 246) // Creamy white
+              doc.setTextColor(84, 40, 19)
               doc.setFont('times', 'bold')
               doc.setFontSize(13)
-              doc.text(String(val), cX + cW/2, cY + cH/2 + 4.0, { align: 'center' })
+              doc.text(String(val), cX + cW/2, cY + cH/2 + 4.2, { align: 'center' })
             }
           }
         }
 
-        // ── Watermark ──
-        const gridH = 5 * cH
-        const wmW = TW * 0.62, wmH = wmW * 0.40
-        const wmX = X + (TW - wmW) / 2
-        const wmY2 = gridY + (gridH - wmH) / 2
-        doc.saveGraphicsState()
-        doc.setGState(doc.GState({ opacity: 0.07 }))
-        doc.addImage(logoB64, 'PNG', wmX, wmY2, wmW, wmH)
-        doc.restoreGraphicsState()
-
         // ── Footer ──
-        const footerY = Y + TH - 3.5
-        doc.setTextColor(168, 85, 247) // Purple-400
+        const footerY = Y + TH - 4.5
+        doc.setDrawColor(142, 109, 79)
+        doc.setLineWidth(0.2)
+        doc.line(X + 10, Y + TH - 8, X + TW - 10, Y + TH - 8)
+
+        doc.setTextColor(142, 109, 79)
         doc.setFont('times', 'bold')
-        doc.setFontSize(6.5)
-        doc.text('BLACK 75 EDITION', X + pad + 2, footerY)
-
-
+        doc.setFontSize(7)
+        doc.text('♦ BLACK 75 EDITION', X + TW / 2, footerY, { align: 'center' })
 
         idx++
       }
