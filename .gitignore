@@ -12,8 +12,8 @@ dist
 dist-ssr
 *.local
 
-# Browser session cache
-server/sessions/session/Default/Cache/
+# Browser session data
+server/sessions/
 
 # Editor directories and files
 .vscode/*

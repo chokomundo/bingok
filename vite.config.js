@@ -193,9 +193,11 @@ function bingoApiPlugin() {
 }
 
 export default defineConfig({
+  base: '/bingo/',
   plugins: [react(), tailwindcss(), bingoApiPlugin()],
   server: {
     host: true,
+    allowedHosts: ['bingo.yacuibaremata.shop', '.yacuibaremata.shop', 'localhost', '.trycloudflare.com'],
     watch: {
       ignored: ['**/public/bingo_*.json']
     }
