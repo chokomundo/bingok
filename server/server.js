@@ -11,6 +11,85 @@ const { Client, LocalAuth, MessageMedia } = pkg;
 
 dotenv.config();
 
+// --- DEEPSEEK AI CONFIGURATION ---
+const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY || 'sk-930d303fb45e40a0b5562e8d42b90422';
+const DEEPSEEK_ENABLED = DEEPSEEK_API_KEY.length > 0;
+
+const AI_SYSTEM_PROMPT = `Eres "Solibot" 🎱, el asistente virtual amigable de un sistema de venta de cartones de bingo por WhatsApp. Eres cálido, entusiasta y hablas como un vendedor de bingo latinoamericano. Usas emojis del bingo (🎱🎟️🍀🔮🎁🥳) con moderación.
+
+Tu trabajo principal es entender lo que el usuario quiere hacer y ayudarlo. Muchos usuarios escriben de forma desordenada, indirecta o confusa. Tu deber es interpretar su INTENCIÓN REAL detrás del mensaje.
+
+Responde SIEMPRE en JSON estricto:
+{"action":"reply","reply":"tu respuesta aquí"}
+{"action":"command","normalizedText":"comando normalizado"}
+
+⚠️ REGLA DE ORO: SIEMPRE responde. NUNCA devuelvas solo "unknown". Si el mensaje es confuso, responde con "action":"reply" explicando amablemente qué puede hacer el bot y qué comandos tiene disponibles.
+
+REGLAS DE INTERPRETACIÓN (piensa en la INTENCIÓN, no en las palabras exactas):
+- Si menciona "id", "código", "registro", "número de vendedor", "me dijeron que pida", "cómo me registro", "mi código" → es INTENCIÓN ID → normalizedText = "id"
+- Si menciona números sueltos de 1 a 5 dígitos o pide "cartón", "cartones", "dame", "necesito", "envíame", "mándame", "quiero el" + número → es INTENCIÓN TICKET → normalizedText = los números separados por espacio
+- Si pregunta "qué cartones tengo", "mis cartones", "cuáles son mis", "lista", "muéstrame" sin números → es INTENCIÓN CARTONES → normalizedText = "cartones"
+- Si pide "regalo", "gratis", "obsequio", "promoción", "me regalaron", "cartón gratis" → es INTENCIÓN REGALO → normalizedText = "regalo"
+- Si saluda, pregunta "cómo estás", "qué puedes hacer", "ayuda", "info", "no entiendo", "cómo funciona", "qué hago", "para qué sirves" → es CONVERSACIÓN → responde con "action":"reply" explicando brevemente qué es el bot, para qué sirve y cómo pedir cartones
+
+COMANDOS DE ADMIN (solo si el mensaje claramente viene de un admin y contiene estas intenciones):
+- "libres", "filas disponibles", "qué filas hay" → normalizedText = "libres"
+- "crear fila", "nueva fila", "generar fila", "más filas" → normalizedText = "nueva fila"
+- "registrar vendedor", "nuevo vendedor", "agregar" + nombre + teléfono → normalizedText = "vendedor [nombre] [teléfono]"
+- "asignar fila", "asignar" + número + teléfono → normalizedText = "asignar [id_fila] [teléfono]"
+- "eliminar", "borrar", "quitar", "sacar" + teléfono → normalizedText = "eliminar [teléfono]"
+
+FORMATO DE RESPUESTA reply: Sé natural, cálido y útil. Explica de forma clara pero conversacional. Para nuevos usuarios, diles quién eres y qué pueden pedir. Para respuestas después de un comando, sé breve.`;
+
+async function processMessageWithAI(text, lowerText, userPhoneNumber, isSuperAdmin) {
+  if (!DEEPSEEK_ENABLED) return null;
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8000);
+
+    const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${DEEPSEEK_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: 'deepseek-chat',
+        messages: [
+          { role: 'system', content: AI_SYSTEM_PROMPT },
+          { role: 'user', content: `[Rol: ${isSuperAdmin ? 'admin' : 'usuario'} | Teléfono: ${userPhoneNumber}]\nMensaje del usuario: "${text}"` }
+        ],
+        temperature: 0.3,
+        max_tokens: 256,
+        response_format: { type: 'json_object' }
+      }),
+      signal: controller.signal
+    });
+
+    clearTimeout(timeout);
+
+    if (!response.ok) {
+      console.warn('[AI] DeepSeek API error:', response.status);
+      return null;
+    }
+
+    const data = await response.json();
+    const content = data.choices?.[0]?.message?.content;
+    if (!content) return null;
+
+    const result = JSON.parse(content);
+    console.log('[AI] Intención detectada:', result.action, result.command || result.normalizedText || '');
+    return result;
+  } catch (e) {
+    if (e.name === 'AbortError') {
+      console.warn('[AI] DeepSeek request timed out');
+    } else {
+      console.warn('[AI] DeepSeek processing error:', e.message);
+    }
+    return null;
+  }
+}
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -459,7 +538,7 @@ function generateTicketHtml(ticket) {
         <!-- Footer Info -->
         <div class="footer">
           <div class="footer-logo">
-            <span class="footer-text">♦ Black 75 Edition</span>
+            <span class="footer-text">♦ Bingo Chaqueño</span>
           </div>
         </div>
       </div>
@@ -544,6 +623,35 @@ app.post('/api/save-seller-rows', (req, res) => {
   }
 });
 
+// --- SELLER GROUPS (Grupos de Vendedores Compartidos) ---
+const sellerGroupsFilePath = path.join(__dirname, '../public/bingo_seller_groups.json');
+
+app.get('/api/seller-groups', (req, res) => {
+  try {
+    if (fs.existsSync(sellerGroupsFilePath)) {
+      const data = fs.readFileSync(sellerGroupsFilePath, 'utf8');
+      return res.json(JSON.parse(data));
+    }
+    res.json([]);
+  } catch (error) {
+    res.json([]);
+  }
+});
+
+app.post('/api/seller-groups', (req, res) => {
+  const groups = req.body;
+  if (!Array.isArray(groups)) {
+    return res.status(400).json({ error: 'Debe ser una matriz JSON' });
+  }
+  try {
+    fs.writeFileSync(sellerGroupsFilePath, JSON.stringify(groups, null, 2), 'utf8');
+    console.log(`[Database] Se guardaron ${groups.length} grupos de vendedores.`);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 const superAdminsFilePath = path.join(__dirname, '../public/bingo_super_admins.json');
 
 // GET: Retrieve registered super admins
@@ -621,16 +729,16 @@ const client = new Client({
   }),
   puppeteer: {
     headless: true,
+    executablePath: '/home/administrator/.cache/puppeteer/chrome/linux-146.0.7680.31/chrome-linux64/chrome',
     args: [
       '--no-sandbox',
       '--disable-setuid-sandbox',
       '--disable-dev-shm-usage',
-      '--disable-accelerated-2d-canvas',
-      '--no-first-run',
-      '--no-zygote',
-      '--single-process',
       '--disable-gpu'
     ]
+  },
+  webVersionCache: {
+    type: 'none'
   }
 });
 
@@ -652,10 +760,25 @@ client.on('ready', () => {
 });
 
 // Message Listener
+
 client.on('message', async (msg) => {
+  // Monkey-patch msg.reply to survive Puppeteer page crashes
+  const originalReply = msg.reply.bind(msg);
+  msg.reply = async (content) => {
+    try {
+      return await originalReply(content);
+    } catch (e) {
+      if (e.message && e.message.includes('Target closed')) {
+        console.warn('[BOT] Page closed on reply, retrying with sendMessage...');
+        return await client.sendMessage(msg.from, content);
+      }
+      throw e;
+    }
+  };
+
   try {
     const text = msg.body.trim();
-    const lowerText = text.toLowerCase();
+    let lowerText = text.toLowerCase();
     const userPhoneNumber = msg.from.split('@')[0]; // e.g. "59178240880"
 
     // 0. Super Admin Command Router
@@ -667,6 +790,19 @@ client.on('message', async (msg) => {
     } catch (err) {}
 
     const isSuperAdmin = superAdmins.includes(userPhoneNumber);
+
+    // --- AI PRE-PROCESSING: DESHABILITADO - usando comandos directos ---
+    // const aiResult = await processMessageWithAI(text, lowerText, userPhoneNumber, isSuperAdmin);
+    // if (aiResult) {
+    //   if (aiResult.action === 'reply') {
+    //     await msg.reply(aiResult.reply);
+    //     return;
+    //   }
+    //   if (aiResult.action === 'command' && aiResult.normalizedText) {
+    //     lowerText = aiResult.normalizedText.toLowerCase().trim();
+    //     console.log('[AI] Texto normalizado:', lowerText);
+    //   }
+    // }
 
     if (isSuperAdmin) {
       // Admin Help / Menu
@@ -740,14 +876,21 @@ client.on('message', async (msg) => {
           }
         });
 
-        const availableTickets = ticketsData.filter(t => !assignedNumbers.has(String(t.ticket_number)));
+        const availableTickets = ticketsData.filter(t =>
+          !assignedNumbers.has(String(t.ticket_number)) && Number(t.ticket_number) < 5000
+        );
         if (availableTickets.length < 15) {
-          await msg.reply(`❌ *No hay suficientes cartones libres.* Quedan solo ${availableTickets.length} libres, se requieren 15.`);
+          await msg.reply(`❌ *No hay suficientes cartones libres (< 5000).* Quedan solo ${availableTickets.length} libres, se requieren 15.`);
           return;
         }
 
         const shuffled = [...availableTickets].sort(() => 0.5 - Math.random());
         const rowNumbers = shuffled.slice(0, 15).map(t => t.ticket_number);
+        // Fisher-Yates shuffle to mix low/high within the row
+        for (let j = rowNumbers.length - 1; j > 0; j--) {
+          const k = Math.floor(Math.random() * (j + 1));
+          [rowNumbers[j], rowNumbers[k]] = [rowNumbers[k], rowNumbers[j]];
+        }
 
         const newRowId = sellerRows.length > 0 ? Math.max(...sellerRows.map(r => r.id)) + 1 : 1;
         const newRow = {
@@ -768,7 +911,7 @@ client.on('message', async (msg) => {
 
       // Add a new seller
       if (lowerText.startsWith('vendedor ')) {
-        const match = msg.body.match(/^vendedor\s+(.+?)\s+(\d+)$/i);
+        const match = lowerText.match(/^vendedor\s+(.+?)\s+(\d+)$/i);
         if (!match) {
           await msg.reply(`⚠️ *Formato incorrecto.* Usa:\n*vendedor [nombre] [teléfono]*\n_(Ej: vendedor Micaela Espinoza 59178240880)_`);
           return;
@@ -968,7 +1111,26 @@ client.on('message', async (msg) => {
       }
 
       // Find ALL rows assigned to this seller (by name, phone number, or registered ID)
-      const matchedSellerRows = sellerRows.filter(row => isRowMatchingSeller(row, registeredName, userPhoneNumber, matchedSellerObj));
+      let matchedSellerRows = sellerRows.filter(row => isRowMatchingSeller(row, registeredName, userPhoneNumber, matchedSellerObj));
+
+      // Check seller groups for shared row access
+      let sellerGroups = [];
+      try {
+        if (fs.existsSync(sellerGroupsFilePath)) {
+          const rawGroups = fs.readFileSync(sellerGroupsFilePath, 'utf-8');
+          if (rawGroups.trim()) sellerGroups = JSON.parse(rawGroups);
+        }
+      } catch (err) {}
+
+      const matchedGroups = sellerGroups.filter(g =>
+        g.sellerIds && g.sellerIds.some(sid => String(sid).trim() === String(userPhoneNumber).trim())
+      );
+      const groupRowIds = new Set();
+      matchedGroups.forEach(g => { if (g.rowIds) g.rowIds.forEach(rid => groupRowIds.add(rid)); });
+      const groupRows = sellerRows.filter(row => groupRowIds.has(row.id));
+      groupRows.forEach(gr => {
+        if (!matchedSellerRows.find(mr => mr.id === gr.id)) matchedSellerRows.push(gr);
+      });
 
       if (matchedSellerRows.length === 0) {
         const displayName = registeredName || `+${userPhoneNumber}`;
@@ -1243,7 +1405,41 @@ client.on('message', async (msg) => {
       // Find ALL rows assigned to this seller (by name, phone number, or registered ID)
       const matchedSellerRows = sellerRows.filter(row => isRowMatchingSeller(row, registeredName, userPhoneNumber, matchedSellerObj));
 
-      if (matchedSellerRows.length === 0) {
+      // 3. Check if seller belongs to any group with shared rows
+      let sellerGroups = [];
+      try {
+        if (fs.existsSync(sellerGroupsFilePath)) {
+          const rawGroups = fs.readFileSync(sellerGroupsFilePath, 'utf-8');
+          if (rawGroups.trim()) {
+            sellerGroups = JSON.parse(rawGroups);
+          }
+        }
+      } catch (err) {
+        console.warn('[BOT Warning] No se pudo leer el archivo de grupos:', err.message);
+      }
+
+      // Find all groups where this seller is a member
+      const matchedGroups = sellerGroups.filter(g =>
+        g.sellerIds && g.sellerIds.some(sid => String(sid).trim() === String(userPhoneNumber).trim())
+      );
+
+      // If seller is in groups, also add those groups' rows
+      const groupRowIds = new Set();
+      matchedGroups.forEach(g => {
+        if (g.rowIds) g.rowIds.forEach(rid => groupRowIds.add(rid));
+      });
+
+      const groupRows = sellerRows.filter(row => groupRowIds.has(row.id));
+
+      // Merge individual rows + group rows (avoid duplicates by row id)
+      const allMatchedRows = [...matchedSellerRows];
+      groupRows.forEach(gr => {
+        if (!allMatchedRows.find(mr => mr.id === gr.id)) {
+          allMatchedRows.push(gr);
+        }
+      });
+
+      if (allMatchedRows.length === 0) {
         console.log(`[BOT Block] Vendedor +${userPhoneNumber} (${registeredName || 'Sin Nombre'}) no tiene filas asignadas.`);
         const displayName = registeredName || `+${userPhoneNumber}`;
         await msg.reply(`❌ *Hola. No tienes cartones asignados, pide que te asignen cartones ${displayName}*`);
@@ -1251,7 +1447,7 @@ client.on('message', async (msg) => {
       }
 
       // Combine all numbers from all matched rows and check if ticket belongs to any of them
-      const allAssignedNumbers = matchedSellerRows.flatMap(row => row.numbers);
+      const allAssignedNumbers = allMatchedRows.flatMap(row => row.numbers);
       const allAssignedNumbersSet = new Set(allAssignedNumbers.map(num => String(parseInt(num, 10))));
 
       // Reload ticketsData if empty to ensure it's synced with any recent website upload
@@ -1372,12 +1568,12 @@ client.on('message', async (msg) => {
       return;
     }
 
-    // Default catch-all instructions if they talk to the bot but don't ask for a number
+    // Default catch-all — always respond if nothing matched above
     const welcomeKeywords = ['hola', 'buen', 'bot', 'info', 'ayuda', 'cómo', 'como'];
     const matchesWelcome = welcomeKeywords.some(w => lowerText.includes(w));
-    
-    if (matchesWelcome) {
-      await msg.reply(`🎱 *¡BIENVENIDO AL BOT DE BINGO BLACK!* 🎱\nTu asistente automático para el juego.\n━━━━━━━━━━━━━━━━━━\nPor favor, elige una opción respondiendo con la *PALABRA CLAVE* de lo que deseas hacer:\n\n🔑 Escribe *id* para Registrarte / Solicitar tu ID de vendedor.\n🎟️ Escribe *cartones* para Ver tus cartones asignados.\n🔢 Escribe el *número de tu cartón* (ejemplo: *1*, *2*, *42*) para descargarlo.\n🎁 Escribe *regalo* para reclamar tus *2 cartones de regalo* (disponibles tras vender 3 normales o completar un combo).\n━━━━━━━━━━━━━━━━━━\n🍀 _¡Mucha suerte en tus ventas!_ 🍀`);
+
+    if (matchesWelcome || true) {
+      await msg.reply(`🎱 *¡BIENVENIDO AL BOT DE BINGO CHAQUEÑO!* 🎱\nTu asistente automático para el juego.\n━━━━━━━━━━━━━━━━━━\nPor favor, elige una opción respondiendo con la *PALABRA CLAVE* de lo que deseas hacer:\n\n🔑 Escribe *id* para Registrarte / Solicitar tu ID de vendedor.\n🎟️ Escribe *cartones* para Ver tus cartones asignados.\n🔢 Escribe el *número de tu cartón* (ejemplo: *1*, *2*, *42*) para descargarlo.\n🎁 Escribe *regalo* para reclamar tus *2 cartones de regalo* (disponibles tras vender 3 normales o completar un combo).\n━━━━━━━━━━━━━━━━━━\n🍀 _¡Mucha suerte en tus ventas!_ 🍀`);
     }
 
   } catch (error) {
@@ -1385,9 +1581,19 @@ client.on('message', async (msg) => {
   }
 });
 
-client.on('disconnected', (reason) => {
+client.on('disconnected', async (reason) => {
   console.warn('[BOT Warning] Cliente de WhatsApp desconectado. Razón:', reason);
   botReady = false;
+  // Auto-reconnect after 5 seconds
+  console.log('[BOT] Intentando reconexión en 5 segundos...');
+  setTimeout(async () => {
+    try {
+      await client.initialize();
+      console.log('[BOT] Reconexión iniciada.');
+    } catch (e) {
+      console.error('[BOT Error] Falló la reconexión:', e.message);
+    }
+  }, 5000);
 });
 
 client.initialize();

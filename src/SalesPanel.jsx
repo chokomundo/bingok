@@ -110,6 +110,21 @@ export default function SalesPanel() {
           }
         })
         .catch(() => {})
+
+      fetch('/bingo_seller_groups.json')
+        .then(r => r.json())
+        .then(data => {
+          if (Array.isArray(data)) {
+            setSellerGroups(prev => {
+              if (JSON.stringify(prev) !== JSON.stringify(data)) {
+                localStorage.setItem('bingo_seller_groups', JSON.stringify(data))
+                return data
+              }
+              return prev
+            })
+          }
+        })
+        .catch(() => {})
     }
 
     // Run immediately on mount
@@ -396,6 +411,18 @@ export default function SalesPanel() {
   
   const [numRowsToGen, setNumRowsToGen] = useState(5)
 
+  // --- SELLER GROUPS STATE ---
+  const [sellerGroups, setSellerGroups] = useState(() => {
+    const stored = localStorage.getItem('bingo_seller_groups')
+    if (stored) {
+      try { const d = JSON.parse(stored); if (Array.isArray(d)) return d } catch {}
+    }
+    return []
+  })
+  const [showGroupModal, setShowGroupModal] = useState(false)
+  const [editingGroup, setEditingGroup] = useState(null)
+  const [groupForm, setGroupForm] = useState({ name: '', sellerIds: [], rowIds: [] })
+
   // Map numbers to beautiful keycap emoji strings (1 -> 1️⃣, 10 -> 🔟, 11 -> 1️⃣1️⃣, 30 -> 3️⃣0️⃣)
   const getEmojiNumber = (n) => {
     if (n === 10) return '🔟'
@@ -403,13 +430,13 @@ export default function SalesPanel() {
     return String(n).split('').map(char => emojis[parseInt(char, 10)] || char).join('')
   }
 
-  // Draw 15 unassigned ticket numbers per row randomly
+  // Draw 15 unassigned ticket numbers per row: solo números < 5000
   const handleGenerateRows = (count) => {
     if (tickets.length === 0) {
       alert('Primero debes cargar una base de datos de cartones en la sección superior.')
       return
     }
-    
+
     const qty = parseInt(count, 10)
     if (isNaN(qty) || qty <= 0) return
 
@@ -419,31 +446,35 @@ export default function SalesPanel() {
       row.numbers.forEach(num => assignedNumbers.add(String(num)))
     })
 
-    // Filter available tickets
-    const availableTickets = tickets.filter(t => !assignedNumbers.has(String(t.ticket_number)))
+    // Filter available tickets: only numbers < 5000
+    const availableTickets = tickets.filter(t =>
+      !assignedNumbers.has(String(t.ticket_number)) && Number(t.ticket_number) < 5000
+    )
 
     if (availableTickets.length < qty * 15) {
-      alert(`No hay suficientes cartones disponibles para generar ${qty} filas de 15. Quedan ${availableTickets.length} cartones libres en la base de datos.`)
+      alert(`No hay suficientes cartones disponibles (< 5000) para generar ${qty} filas de 15. Quedan ${availableTickets.length} cartones libres.`)
       return
     }
 
-    // Shuffle and pick
+    // Shuffle
     const shuffled = [...availableTickets].sort(() => 0.5 - Math.random())
+
     const newRows = []
-    let currentIdx = 0
+    let idx = 0
 
     for (let i = 0; i < qty; i++) {
       const rowNum = sellerRows.length + newRows.length + 1
       const rowNumbers = []
       for (let j = 0; j < 15; j++) {
-        rowNumbers.push(shuffled[currentIdx].ticket_number)
-        currentIdx++
+        rowNumbers.push(shuffled[idx].ticket_number)
+        idx++
       }
-      newRows.push({
-        id: rowNum,
-        name: '',
-        numbers: rowNumbers
-      })
+      // Fisher-Yates shuffle
+      for (let j = rowNumbers.length - 1; j > 0; j--) {
+        const k = Math.floor(Math.random() * (j + 1));
+        [rowNumbers[j], rowNumbers[k]] = [rowNumbers[k], rowNumbers[j]]
+      }
+      newRows.push({ id: rowNum, name: '', numbers: rowNumbers })
     }
 
     const updated = [...sellerRows, ...newRows]
@@ -552,8 +583,73 @@ export default function SalesPanel() {
     }
   }
 
+  // --- SELLER GROUPS HANDLERS ---
+  const handleOpenCreateGroup = () => {
+    setEditingGroup(null)
+    setGroupForm({ name: '', sellerIds: [], rowIds: [] })
+    setShowGroupModal(true)
+  }
+
+  const handleOpenEditGroup = (group) => {
+    setEditingGroup(group)
+    setGroupForm({ name: group.name, sellerIds: [...group.sellerIds], rowIds: [...group.rowIds] })
+    setShowGroupModal(true)
+  }
+
+  const handleToggleSeller = (sellerId) => {
+    setGroupForm(prev => {
+      const exists = prev.sellerIds.includes(sellerId)
+      return { ...prev, sellerIds: exists ? prev.sellerIds.filter(id => id !== sellerId) : [...prev.sellerIds, sellerId] }
+    })
+  }
+
+  const handleToggleRow = (rowId) => {
+    setGroupForm(prev => {
+      const exists = prev.rowIds.includes(rowId)
+      return { ...prev, rowIds: exists ? prev.rowIds.filter(id => id !== rowId) : [...prev.rowIds, rowId] }
+    })
+  }
+
+  const handleSaveGroup = () => {
+    if (!groupForm.name.trim()) { alert('El nombre del grupo es obligatorio'); return }
+    if (groupForm.sellerIds.length === 0) { alert('Selecciona al menos 1 vendedor'); return }
+    if (groupForm.sellerIds.length > 20) { alert('Máximo 20 vendedores por grupo'); return }
+    if (groupForm.rowIds.length === 0) { alert('Selecciona al menos 1 fila'); return }
+    if (groupForm.rowIds.length > 50) { alert('Máximo 50 filas por grupo'); return }
+
+    let updated
+    if (editingGroup) {
+      updated = sellerGroups.map(g => g.id === editingGroup.id ? { ...groupForm, id: editingGroup.id } : g)
+    } else {
+      const newId = sellerGroups.length > 0 ? Math.max(...sellerGroups.map(g => g.id)) + 1 : 1
+      updated = [...sellerGroups, { ...groupForm, id: newId }]
+    }
+
+    setSellerGroups(updated)
+    localStorage.setItem('bingo_seller_groups', JSON.stringify(updated))
+    setShowGroupModal(false)
+
+    fetch('/api/seller-groups', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updated)
+    }).catch(err => console.warn('[Sync Error] Grupos:', err))
+  }
+
+  const handleDeleteGroup = (groupId) => {
+    if (!window.confirm('¿Eliminar este grupo? Los vendedores perderán acceso a las filas compartidas.')) return
+    const updated = sellerGroups.filter(g => g.id !== groupId)
+    setSellerGroups(updated)
+    localStorage.setItem('bingo_seller_groups', JSON.stringify(updated))
+    fetch('/api/seller-groups', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updated) }).catch(() => {})
+  }
+
   const totalTickets = tickets.length
   const totalDownloads = downloads.length
+  const normalSales = downloads.filter(d => !d.isGift).length
+  const giftSales = downloads.filter(d => d.isGift).length
+  const precioCarton = 5 // Bs por cartón
+  const ganancia = normalSales * precioCarton
   const percentage = totalTickets > 0 ? Math.round((totalDownloads / totalTickets) * 100) : 0
 
   // Group downloads by day or hour
@@ -764,7 +860,7 @@ export default function SalesPanel() {
                   <BarChart3 className="w-5 h-5 text-purple-400" />
                   <div>
                     <h2 className="text-xs font-black uppercase tracking-[0.2em] text-[#7c7297]">Desempeño de Ventas</h2>
-                    <p className="text-[10px] text-[#7c7297]/60 font-semibold mt-0.5">Reporte gráfico de boletos distribuidos</p>
+                    <p className="text-[10px] text-[#7c7297]/60 font-semibold mt-0.5">Reporte de boletos distribuidos</p>
                   </div>
                 </div>
 
@@ -793,6 +889,30 @@ export default function SalesPanel() {
                     </button>
                   </div>
                 )}
+              </div>
+
+              {/* ── Stats Summary Cards ── */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="bg-[#180c35]/40 border border-purple-500/20 rounded-2xl p-3 flex flex-col gap-1">
+                  <span className="text-[9px] font-black uppercase tracking-wider text-[#7c7297]">Vendidos</span>
+                  <span className="text-xl font-black text-purple-400 font-mono">{normalSales}</span>
+                  <span className="text-[9px] text-[#7c7297]/50">{normalSales * precioCarton} Bs</span>
+                </div>
+                <div className="bg-[#180c35]/40 border border-emerald-500/20 rounded-2xl p-3 flex flex-col gap-1">
+                  <span className="text-[9px] font-black uppercase tracking-wider text-[#7c7297]">Regalos</span>
+                  <span className="text-xl font-black text-emerald-400 font-mono">{giftSales}</span>
+                  <span className="text-[9px] text-[#7c7297]/50">Sin costo</span>
+                </div>
+                <div className="bg-[#180c35]/40 border border-amber-500/20 rounded-2xl p-3 flex flex-col gap-1">
+                  <span className="text-[9px] font-black uppercase tracking-wider text-[#7c7297]">Total Entregados</span>
+                  <span className="text-xl font-black text-amber-400 font-mono">{totalDownloads}</span>
+                  <span className="text-[9px] text-[#7c7297]/50">de {totalTickets.toLocaleString()}</span>
+                </div>
+                <div className="bg-[#180c35]/40 border border-green-500/20 rounded-2xl p-3 flex flex-col gap-1">
+                  <span className="text-[9px] font-black uppercase tracking-wider text-[#7c7297]">Ganancia</span>
+                  <span className="text-xl font-black text-green-400 font-mono">{ganancia.toLocaleString()}</span>
+                  <span className="text-[9px] text-[#7c7297]/50">Bolivianos</span>
+                </div>
               </div>
 
               {downloads.length === 0 ? (
@@ -1003,6 +1123,51 @@ export default function SalesPanel() {
                             </span>
                           );
                         })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+
+            {/* ── Seller Groups Section ── */}
+            <section className="bg-[#0e0524]/60 backdrop-blur-xl border border-[#221443] rounded-3xl p-5 md:p-6 shadow-[0_20px_50px_rgba(0,0,0,0.3)] flex flex-col gap-5">
+              <div className="flex items-center justify-between border-b border-[#221443]/40 pb-4">
+                <div className="flex items-center gap-2">
+                  <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981]" />
+                  <h2 className="text-xs font-black uppercase tracking-[0.2em] text-[#7c7297]">Grupos de Vendedores</h2>
+                </div>
+                <button
+                  onClick={handleOpenCreateGroup}
+                  className="flex items-center gap-2 h-9 px-4 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs uppercase tracking-wider rounded-lg active:scale-[0.98] transition-all cursor-pointer shadow-md shadow-emerald-600/10"
+                >
+                  + Crear Grupo
+                </button>
+              </div>
+
+              {sellerGroups.length === 0 ? (
+                <div className="text-center py-10 bg-[#180c35]/10 border border-dashed border-[#221443]/40 rounded-3xl">
+                  <span className="text-3xl">👥</span>
+                  <h3 className="text-sm font-black text-white uppercase tracking-wider mt-3">Sin Grupos Creados</h3>
+                  <p className="text-xs text-[#7c7297] mt-1.5 max-w-sm mx-auto leading-relaxed">
+                    Crea grupos para que varios vendedores compartan el acceso a las mismas filas. Ideal para equipos de venta.
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[400px] overflow-y-auto pr-1">
+                  {sellerGroups.map(group => (
+                    <div key={group.id} className="bg-[#180c35]/30 border border-emerald-500/10 rounded-2xl p-4 flex flex-col gap-3 hover:border-emerald-500/30 transition-all">
+                      <div className="flex justify-between items-center border-b border-[#221443]/30 pb-2">
+                        <span className="font-black text-white text-sm">{group.name}</span>
+                        <div className="flex gap-1">
+                          <button onClick={() => handleOpenEditGroup(group)} className="px-2 py-1 text-[10px] font-bold text-[#7c7297] hover:text-white bg-[#0e0524] border border-[#221443] rounded-lg cursor-pointer">Editar</button>
+                          <button onClick={() => handleDeleteGroup(group.id)} className="px-2 py-1 text-[10px] font-bold text-red-400 hover:text-red-300 bg-red-500/5 border border-red-500/10 rounded-lg cursor-pointer">Eliminar</button>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 text-xs">
+                        <span className="text-[#7c7297] font-bold">{group.sellerIds.length} vendedor{group.sellerIds.length !== 1 ? 'es' : ''}</span>
+                        <span className="text-[#221443]">•</span>
+                        <span className="text-amber-400 font-bold">{group.rowIds.length} fila{group.rowIds.length !== 1 ? 's' : ''}</span>
                       </div>
                     </div>
                   ))}
@@ -1484,6 +1649,104 @@ export default function SalesPanel() {
               >
                 <Trash2 className="w-4 h-4" />
                 Confirmar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Group Create/Edit Modal ── */}
+      {showGroupModal && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-[#0e0524] border border-emerald-500/20 rounded-3xl p-6 max-w-lg w-full shadow-[0_30px_60px_rgba(16,185,129,0.1)] animate-bounce-in max-h-[85vh] overflow-y-auto">
+            <div className="flex items-center gap-3.5 mb-5">
+              <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0">
+                <span className="text-xl">👥</span>
+              </div>
+              <div>
+                <h3 className="text-lg font-black text-white">{editingGroup ? 'Editar Grupo' : 'Crear Grupo'}</h3>
+                <p className="text-xs text-[#7c7297]">Configura vendedores y filas compartidas</p>
+              </div>
+            </div>
+
+            {/* Group Name */}
+            <div className="mb-4">
+              <label className="text-[10px] font-black uppercase tracking-wider text-[#7c7297] block mb-1.5">Nombre del Grupo</label>
+              <input
+                type="text"
+                value={groupForm.name}
+                onChange={e => setGroupForm(prev => ({ ...prev, name: e.target.value }))}
+                placeholder="Ej: Zona Norte"
+                className="w-full h-10 bg-[#080214] border border-[#221443] rounded-xl px-3 text-sm font-bold text-white placeholder:text-[#7c7297]/30 focus:outline-none focus:ring-1 focus:ring-emerald-500/50"
+              />
+            </div>
+
+            {/* Select Sellers */}
+            <div className="mb-4">
+              <label className="text-[10px] font-black uppercase tracking-wider text-[#7c7297] block mb-1.5">
+                Vendedores ({groupForm.sellerIds.length}/20)
+              </label>
+              <div className="bg-[#080214] border border-[#221443] rounded-xl p-2 max-h-28 overflow-y-auto flex flex-wrap gap-1.5">
+                {authorizedIds.length === 0 && <span className="text-[10px] text-[#7c7297] p-2">No hay vendedores registrados</span>}
+                {authorizedIds.map(seller => {
+                  const sId = typeof seller === 'object' && seller !== null ? seller.id : seller
+                  const sName = typeof seller === 'object' && seller !== null ? (seller.name || seller.cellphone || sId) : sId
+                  const selected = groupForm.sellerIds.includes(sId)
+                  return (
+                    <button
+                      key={sId}
+                      onClick={() => handleToggleSeller(sId)}
+                      className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
+                        selected
+                          ? 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-400'
+                          : 'bg-[#180c35]/40 border border-[#221443]/40 text-[#7c7297] hover:border-emerald-500/20 hover:text-white'
+                      }`}
+                    >
+                      {sName}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* Select Rows */}
+            <div className="mb-5">
+              <label className="text-[10px] font-black uppercase tracking-wider text-[#7c7297] block mb-1.5">
+                Filas ({groupForm.rowIds.length}/50)
+              </label>
+              <div className="bg-[#080214] border border-[#221443] rounded-xl p-2 max-h-28 overflow-y-auto flex flex-wrap gap-1.5">
+                {sellerRows.length === 0 && <span className="text-[10px] text-[#7c7297] p-2">No hay filas generadas</span>}
+                {sellerRows.map(row => {
+                  const selected = groupForm.rowIds.includes(row.id)
+                  return (
+                    <button
+                      key={row.id}
+                      onClick={() => handleToggleRow(row.id)}
+                      className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
+                        selected
+                          ? 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-400'
+                          : 'bg-[#180c35]/40 border border-[#221443]/40 text-[#7c7297] hover:border-emerald-500/20 hover:text-white'
+                      }`}
+                    >
+                      Fila {row.id}{row.name ? ` (${row.name})` : ''}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowGroupModal(false)}
+                className="flex-1 h-11 bg-[#180c35]/60 border border-[#221443] text-[#7c7297] hover:text-white font-bold text-xs uppercase tracking-wider rounded-xl hover:bg-[#221443]/50 active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-1.5"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleSaveGroup}
+                className="flex-1 h-11 bg-gradient-to-r from-emerald-600 to-emerald-500 text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-emerald-600/20 hover:shadow-emerald-600/40 active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-1.5"
+              >
+                {editingGroup ? 'Guardar Cambios' : 'Crear Grupo'}
               </button>
             </div>
           </div>

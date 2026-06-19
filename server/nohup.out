@@ -1,0 +1,17 @@
+[Database] Se cargaron 0 cartones de la base de datos central en public/.
+[Assets] Logo de marca cargado exitosamente para la marca de agua.
+[BOT] Inicializando cliente de WhatsApp Web...
+(node:2081807) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+
+🚀 Servidor API de Cartones de Bingo escuchando en http://localhost:5000
+   - Endpoint de Sincronización: POST http://localhost:5000/api/tickets
+   - Endpoint de Webhook WhatsApp: POST http://localhost:5000/api/whatsapp/webhook
+
+
+=========================================
+[BOT] ¡CONEXIÓN EXITOSA!
+[BOT] El bot de WhatsApp está listo para entregar cartones.
+=========================================
+
+./start.sh: line 5: 2081807 Killed                  node server.js

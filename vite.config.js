@@ -178,6 +178,48 @@ function bingoApiPlugin() {
       return
     }
 
+    // 9. Seller Groups (Get/Set)
+    if (req.url === '/api/seller-groups' && req.method === 'GET') {
+      try {
+        const filePath = path.resolve('public/bingo_seller_groups.json')
+        if (fs.existsSync(filePath)) {
+          const data = fs.readFileSync(filePath, 'utf8')
+          res.writeHead(200, { 'Content-Type': 'application/json' })
+          res.end(data)
+        } else {
+          res.writeHead(200, { 'Content-Type': 'application/json' })
+          res.end(JSON.stringify([]))
+        }
+      } catch (e) {
+        res.writeHead(500, { 'Content-Type': 'application/json' })
+        res.end(JSON.stringify({ error: e.message }))
+      }
+      return
+    }
+
+    if (req.url === '/api/seller-groups' && req.method === 'POST') {
+      let body = ''
+      req.on('data', chunk => { body += chunk })
+      req.on('end', () => {
+        try {
+          const groups = JSON.parse(body)
+          if (Array.isArray(groups)) {
+            const filePath = path.resolve('public/bingo_seller_groups.json')
+            fs.writeFileSync(filePath, JSON.stringify(groups, null, 2))
+            res.writeHead(200, { 'Content-Type': 'application/json' })
+            res.end(JSON.stringify({ success: true }))
+          } else {
+            res.writeHead(400, { 'Content-Type': 'application/json' })
+            res.end(JSON.stringify({ error: 'Invalid array structure' }))
+          }
+        } catch (e) {
+          res.writeHead(400, { 'Content-Type': 'application/json' })
+          res.end(JSON.stringify({ error: 'Invalid payload' }))
+        }
+      })
+      return
+    }
+
     next()
   }
 
