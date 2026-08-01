@@ -11,85 +11,6 @@ const { Client, LocalAuth, MessageMedia } = pkg;
 
 dotenv.config();
 
-// --- DEEPSEEK AI CONFIGURATION ---
-const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY || 'sk-930d303fb45e40a0b5562e8d42b90422';
-const DEEPSEEK_ENABLED = DEEPSEEK_API_KEY.length > 0;
-
-const AI_SYSTEM_PROMPT = `Eres "Solibot" 🎱, el asistente virtual amigable de un sistema de venta de cartones de bingo por WhatsApp. Eres cálido, entusiasta y hablas como un vendedor de bingo latinoamericano. Usas emojis del bingo (🎱🎟️🍀🔮🎁🥳) con moderación.
-
-Tu trabajo principal es entender lo que el usuario quiere hacer y ayudarlo. Muchos usuarios escriben de forma desordenada, indirecta o confusa. Tu deber es interpretar su INTENCIÓN REAL detrás del mensaje.
-
-Responde SIEMPRE en JSON estricto:
-{"action":"reply","reply":"tu respuesta aquí"}
-{"action":"command","normalizedText":"comando normalizado"}
-
-⚠️ REGLA DE ORO: SIEMPRE responde. NUNCA devuelvas solo "unknown". Si el mensaje es confuso, responde con "action":"reply" explicando amablemente qué puede hacer el bot y qué comandos tiene disponibles.
-
-REGLAS DE INTERPRETACIÓN (piensa en la INTENCIÓN, no en las palabras exactas):
-- Si menciona "id", "código", "registro", "número de vendedor", "me dijeron que pida", "cómo me registro", "mi código" → es INTENCIÓN ID → normalizedText = "id"
-- Si menciona números sueltos de 1 a 5 dígitos o pide "cartón", "cartones", "dame", "necesito", "envíame", "mándame", "quiero el" + número → es INTENCIÓN TICKET → normalizedText = los números separados por espacio
-- Si pregunta "qué cartones tengo", "mis cartones", "cuáles son mis", "lista", "muéstrame" sin números → es INTENCIÓN CARTONES → normalizedText = "cartones"
-- Si pide "regalo", "gratis", "obsequio", "promoción", "me regalaron", "cartón gratis" → es INTENCIÓN REGALO → normalizedText = "regalo"
-- Si saluda, pregunta "cómo estás", "qué puedes hacer", "ayuda", "info", "no entiendo", "cómo funciona", "qué hago", "para qué sirves" → es CONVERSACIÓN → responde con "action":"reply" explicando brevemente qué es el bot, para qué sirve y cómo pedir cartones
-
-COMANDOS DE ADMIN (solo si el mensaje claramente viene de un admin y contiene estas intenciones):
-- "libres", "filas disponibles", "qué filas hay" → normalizedText = "libres"
-- "crear fila", "nueva fila", "generar fila", "más filas" → normalizedText = "nueva fila"
-- "registrar vendedor", "nuevo vendedor", "agregar" + nombre + teléfono → normalizedText = "vendedor [nombre] [teléfono]"
-- "asignar fila", "asignar" + número + teléfono → normalizedText = "asignar [id_fila] [teléfono]"
-- "eliminar", "borrar", "quitar", "sacar" + teléfono → normalizedText = "eliminar [teléfono]"
-
-FORMATO DE RESPUESTA reply: Sé natural, cálido y útil. Explica de forma clara pero conversacional. Para nuevos usuarios, diles quién eres y qué pueden pedir. Para respuestas después de un comando, sé breve.`;
-
-async function processMessageWithAI(text, lowerText, userPhoneNumber, isSuperAdmin) {
-  if (!DEEPSEEK_ENABLED) return null;
-  try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 8000);
-
-    const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${DEEPSEEK_API_KEY}`
-      },
-      body: JSON.stringify({
-        model: 'deepseek-chat',
-        messages: [
-          { role: 'system', content: AI_SYSTEM_PROMPT },
-          { role: 'user', content: `[Rol: ${isSuperAdmin ? 'admin' : 'usuario'} | Teléfono: ${userPhoneNumber}]\nMensaje del usuario: "${text}"` }
-        ],
-        temperature: 0.3,
-        max_tokens: 256,
-        response_format: { type: 'json_object' }
-      }),
-      signal: controller.signal
-    });
-
-    clearTimeout(timeout);
-
-    if (!response.ok) {
-      console.warn('[AI] DeepSeek API error:', response.status);
-      return null;
-    }
-
-    const data = await response.json();
-    const content = data.choices?.[0]?.message?.content;
-    if (!content) return null;
-
-    const result = JSON.parse(content);
-    console.log('[AI] Intención detectada:', result.action, result.command || result.normalizedText || '');
-    return result;
-  } catch (e) {
-    if (e.name === 'AbortError') {
-      console.warn('[AI] DeepSeek request timed out');
-    } else {
-      console.warn('[AI] DeepSeek processing error:', e.message);
-    }
-    return null;
-  }
-}
-
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -117,19 +38,17 @@ try {
   console.warn('[Database] No se pudieron cargar cartones de la base de datos central:', error.message);
 }
 
-// Convert watermark logo to base64
-let watermarkBase64 = '';
-const logoPath = path.join(__dirname, '../src/assets/horse_watermark.png');
+// Convert Bolillo logo to base64 for WhatsApp card rendering
+let bolilloLogoBase64 = '';
+const bolilloLogoPath = path.join(__dirname, '../src/assets/bolillo_logo.jpg');
 try {
-  if (fs.existsSync(logoPath)) {
-    const fileBuffer = fs.readFileSync(logoPath);
-    watermarkBase64 = `data:image/png;base64,${fileBuffer.toString('base64')}`;
-    console.log('[Assets] Logo de marca cargado exitosamente para la marca de agua.');
-  } else {
-    console.warn(`[Assets Warning] No se encontró la imagen del logo en ${logoPath}. Se renderizará sin marca de agua.`);
+  if (fs.existsSync(bolilloLogoPath)) {
+    const fileBuffer = fs.readFileSync(bolilloLogoPath);
+    bolilloLogoBase64 = `data:image/jpeg;base64,${fileBuffer.toString('base64')}`;
+    console.log('[Assets] Logo de Bolillo cargado exitosamente para el renderizado del WhatsApp bot.');
   }
 } catch (error) {
-  console.warn('[Assets Error] Error al leer la imagen de la marca de agua:', error.message);
+  console.warn('[Assets Error] Error al leer el logo de Bolillo:', error.message);
 }
 
 // --- EXTRACT & PADDING TICKET NUMBER ---
@@ -192,8 +111,9 @@ function isRowMatchingSeller(row, registeredName, userPhoneNumber, sellerObj) {
 // --- DYNAMIC CLEAN TICKET HTML RENDERER ---
 function generateTicketHtml(ticket) {
   const BINGO_LETTERS = ['B', 'I', 'N', 'G', 'O'];
+  const formattedTicketNum = String(ticket.ticket_number || 1).padStart(6, '0');
+  const ticketValue = ticket.price || '20 BS';
 
-  // Build grid HTML
   let gridCellsHtml = '';
   ticket.matrix.forEach((row) => {
     row.forEach((cell) => {
@@ -203,9 +123,7 @@ function generateTicketHtml(ticket) {
         gridCellsHtml += `
           <div class="cell cell-free">
             <div class="free-content">
-              <span class="triangle">▲</span>
-              <span class="free-label">FREE</span>
-              <span class="triangle">▼</span>
+              <div class="free-badge">B</div>
             </div>
           </div>
         `;
@@ -225,320 +143,315 @@ function generateTicketHtml(ticket) {
     <head>
       <meta charset="UTF-8">
       <title>Carton ${ticket.ticket_number}</title>
-      <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Cinzel:wght@400..900&display=swap" rel="stylesheet">
+      <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800;900&family=Cinzel:wght@600;700;800;900&display=swap" rel="stylesheet">
       <style>
         body {
           margin: 0;
-          padding: 0;
-          background-color: #fcfcfc;
+          padding: 16px;
+          background-color: #FAF6EF;
           display: flex;
           justify-content: center;
           align-items: center;
-          height: 100vh;
+          font-family: 'Cinzel', Georgia, serif;
+        }
+
+        #card-wrapper {
+          padding: 12px;
+          background-color: #FAF6EF;
+          display: inline-block;
+          border-radius: 20px;
         }
 
         #card-container {
-          width: 360px;
-          height: 500px;
-          background: radial-gradient(circle, #fdfaf5 0%, #ecdcc4 100%);
-          border: 2px solid #8e6d4f;
-          border-radius: 24px;
-          padding: 16px;
-          box-shadow: 0 15px 40px rgba(84, 40, 19, 0.15);
+          width: 420px;
+          background: #FAF6EF;
+          border: 5px solid #C5A052;
+          border-radius: 16px;
+          padding: 14px 14px 16px 14px;
+          box-shadow: 0 15px 40px rgba(84, 40, 19, 0.25), inset 0 0 20px rgba(197, 160, 82, 0.15);
           box-sizing: border-box;
           display: flex;
           flex-direction: column;
           justify-content: space-between;
           position: relative;
-          overflow: hidden;
-          color: #542813;
         }
 
-        /* Ornate inner border */
+        /* Inner thin border */
         .inner-border {
           position: absolute;
-          top: 8px;
-          bottom: 8px;
-          left: 8px;
-          right: 8px;
-          border: 1.2px dashed rgba(142, 109, 79, 0.45);
-          border-radius: 20px;
+          top: 6px;
+          bottom: 6px;
+          left: 6px;
+          right: 6px;
+          border: 1px solid #C5A052;
+          border-radius: 12px;
           pointer-events: none;
           z-index: 10;
         }
 
-        /* Decorative dots */
-        .dot {
+        /* Corner Flourishes */
+        .flourish {
           position: absolute;
-          width: 6px;
-          height: 6px;
-          background-color: #8e6d4f;
-          border-radius: 50%;
+          color: #C5A052;
+          font-size: 14px;
+          line-height: 1;
           z-index: 11;
         }
-        .dot-tl { top: 12px; left: 12px; }
-        .dot-tr { top: 12px; right: 12px; }
-        .dot-bl { bottom: 12px; left: 12px; }
-        .dot-br { bottom: 12px; right: 12px; }
-
-        /* Watermark image */
-        .watermark {
-          position: absolute;
-          top: 0;
-          bottom: 0;
-          left: 0;
-          right: 0;
-          width: 85%;
-          height: 85%;
-          margin: auto;
-          object-fit: contain;
-          opacity: 0.16;
-          pointer-events: none;
-          z-index: 1;
-        }
+        .fl-tl { top: 8px; left: 8px; }
+        .fl-tr { top: 8px; right: 8px; transform: rotate(90deg); }
+        .fl-bl { bottom: 8px; left: 8px; transform: rotate(-90deg); }
+        .fl-br { bottom: 8px; right: 8px; transform: rotate(180deg); }
 
         /* Header Panel */
         .header-panel {
-          padding-top: 10px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 10px;
           margin-bottom: 8px;
+          padding: 0 4px;
           position: relative;
-          text-align: center;
           z-index: 2;
         }
 
-        .ticket-number {
-          position: absolute;
-          top: 0px;
-          left: 2px;
-          font-family: 'Playfair Display', Georgia, serif;
-          font-size: 10px;
-          font-weight: 700;
-          color: #542813;
-        }
-
-        .title {
-          font-family: 'Cinzel', serif;
-          font-size: 25px;
-          font-weight: 900;
-          margin: 0;
-          color: #542813;
-          letter-spacing: 0.08em;
-          text-transform: uppercase;
-          line-height: 1;
-          text-shadow: 0.5px 0.5px 0px #fff, 1.5px 1.5px 3px rgba(84, 40, 19, 0.3);
-        }
-
-        .title-sub {
-          font-family: 'Cinzel', serif;
-          font-size: 21px;
-          font-weight: 900;
-          margin: 2px 0 0 0;
-          color: #542813;
-          letter-spacing: 0.06em;
-          text-transform: uppercase;
-          line-height: 1;
-          text-shadow: 0.5px 0.5px 0px #fff, 1.5px 1.5px 3px rgba(84, 40, 19, 0.3);
-        }
-
-        .subtitle-row {
+        .header-logo {
+          width: 90px;
           display: flex;
           align-items: center;
           justify-content: center;
-          gap: 12px;
-          font-size: 9px;
-          margin-top: 6px;
+        }
+        .header-logo img {
+          width: 100%;
+          height: auto;
+          object-fit: contain;
+          mix-blend-mode: multiply;
+          border-radius: 50%;
         }
 
-        .flower {
-          color: #8e6d4f;
-          font-size: 8px;
+        .header-middle {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          flex: 1;
         }
 
-        .divider {
-          width: 48px;
-          height: 0.5px;
-          background-color: rgba(142, 109, 79, 0.4);
-        }
-
-        .version {
-          font-family: 'Cinzel', serif;
+        .ribbon {
+          background-color: #8B1A1A;
+          color: #FFFFFF;
+          padding: 3px 16px;
+          font-size: 12px;
           font-weight: 900;
-          color: #542813;
-          letter-spacing: 0.25em;
+          letter-spacing: 0.15em;
           text-transform: uppercase;
+          clip-path: polygon(0 0, 100% 0, 92% 100%, 8% 100%);
+          font-family: 'Cinzel', Georgia, serif;
+        }
+
+        .ticket-number-display {
+          font-family: 'Playfair Display', Georgia, serif;
+          font-size: 34px;
+          font-weight: 900;
+          color: #111111;
+          line-height: 1;
+          margin-top: 3px;
+          letter-spacing: -0.02em;
+        }
+
+        .header-right {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          min-width: 80px;
+        }
+
+        .valor-title {
+          font-size: 11px;
+          font-weight: 900;
+          color: #8B1A1A;
+          letter-spacing: 0.1em;
+        }
+
+        .valor-divider {
+          width: 100%;
+          height: 1px;
+          background-color: #C5A052;
+          margin: 2px 0;
+        }
+
+        .valor-amount {
+          font-family: 'Playfair Display', Georgia, serif;
+          font-size: 20px;
+          font-weight: 900;
+          color: #111111;
+          line-height: 1;
+        }
+
+        /* Grid Outer Container */
+        .grid-container {
+          border: 3px solid #C5A052;
+          border-radius: 8px;
+          padding: 2px;
+          background-color: rgba(197, 160, 82, 0.2);
+          box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+          z-index: 2;
         }
 
         /* Letter Headers (B I N G O) */
         .letters-panel {
-          border-top: 1px solid rgba(142, 109, 79, 0.3);
-          border-bottom: 1px solid rgba(142, 109, 79, 0.3);
-          background-color: rgba(253, 250, 245, 0.4);
-          margin-bottom: 6px;
+          background-color: #8B1A1A;
+          border-bottom: 2px solid #C5A052;
           display: grid;
           grid-template-columns: repeat(5, 1fr);
-          padding: 2px 0;
-          z-index: 2;
+          border-top-left-radius: 4px;
+          border-top-right-radius: 4px;
         }
 
         .letter {
-          font-family: 'Cinzel', serif;
-          color: #542813;
-          font-size: 18px;
+          font-family: 'Cinzel', Georgia, serif;
+          color: #E2C070;
+          font-size: 24px;
           font-weight: 900;
           text-align: center;
+          padding: 5px 0;
+          letter-spacing: 0.05em;
+          border-right: 1px solid rgba(197, 160, 82, 0.4);
+        }
+        .letter:last-child {
+          border-right: none;
         }
 
-        /* Grid */
-        .grid-panel {
-          padding: 2px;
-          position: relative;
-          z-index: 2;
-        }
-
+        /* Grid Cells */
         .grid {
           display: grid;
           grid-template-columns: repeat(5, 1fr);
-          gap: 6px;
-          position: relative;
-          z-index: 3;
+          gap: 1px;
+          background-color: rgba(197, 160, 82, 0.4);
         }
 
         .cell {
           aspect-ratio: 1 / 1;
           display: flex;
-          flex-direction: column;
           align-items: center;
           justify-content: center;
-          border-radius: 12px;
+          background: #FFFDF9;
           position: relative;
           box-sizing: border-box;
-          text-align: center;
-          background: rgba(253, 250, 245, 0.82);
-          border: 1px solid #c8b9a6;
-          box-shadow: 0 2px 4px rgba(84, 40, 19, 0.05), inset 0 1px 2px rgba(255, 255, 255, 0.9);
-        }
-
-        .cell::after {
-          content: '';
-          position: absolute;
-          top: 1.5px;
-          bottom: 1.5px;
-          left: 1.5px;
-          right: 1.5px;
-          border: 1px solid rgba(142, 109, 79, 0.15);
-          border-radius: 10px;
-          pointer-events: none;
         }
 
         .cell-number {
           font-family: 'Playfair Display', Georgia, serif;
-          color: #542813;
-          font-size: 18px;
-          font-weight: 700;
-          text-shadow: 0.5px 0.5px 0px rgba(255, 255, 255, 0.8);
+          color: #111111;
+          font-size: 24px;
+          font-weight: 900;
+          line-height: 1;
         }
 
-        /* Free space styling */
         .cell-free {
-          background: rgba(253, 250, 245, 0.65);
-          border: 1px solid #8e6d4f;
+          background: #F5EEE3;
+          border: 2px solid #C5A052;
         }
 
         .free-content {
+          width: 100%;
+          height: 100%;
+          padding: 3px;
+          box-sizing: border-box;
           display: flex;
-          flex-direction: column;
           align-items: center;
           justify-content: center;
         }
 
-        .triangle {
-          font-size: 10px;
-          line-height: 1;
-          color: #8e6d4f;
-        }
-
-        .free-label {
+        .free-badge {
+          width: 100%;
+          height: 100%;
+          border-radius: 50%;
+          border: 2px solid #C5A052;
+          background-color: #8B1A1A;
+          color: #E2C070;
+          display: flex;
+          align-items: center;
+          justify-content: center;
           font-family: 'Cinzel', Georgia, serif;
-          font-size: 6.5px;
           font-weight: 900;
-          letter-spacing: 0.1em;
-          text-transform: uppercase;
-          color: #542813;
-          margin: 1px 0;
+          font-size: 16px;
+          box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4);
         }
 
-        /* Footer Row */
+        /* Footer Ribbon */
         .footer {
           display: flex;
           justify-content: center;
           align-items: center;
+          gap: 8px;
           margin-top: 10px;
-          padding-top: 10px;
-          border-top: 1px solid rgba(142, 109, 79, 0.25);
-          font-size: 9px;
-          color: #8e6d4f;
+          margin-bottom: 4px;
           z-index: 2;
         }
 
-        .footer-logo {
-          display: flex;
-          align-items: center;
-          gap: 4px;
+        .footer-symbol {
+          color: #C5A052;
+          font-size: 12px;
         }
 
-        .footer-text {
-          font-family: 'Cinzel', Georgia, serif;
+        .footer-ribbon {
+          background-color: #8B1A1A;
+          color: #FFFFFF;
+          padding: 4px 24px;
+          font-size: 12px;
           font-weight: 900;
-          color: #8e6d4f;
-          letter-spacing: 0.18em;
+          letter-spacing: 0.2em;
           text-transform: uppercase;
+          clip-path: polygon(6% 0, 94% 0, 100% 100%, 0 100%);
+          font-family: 'Cinzel', Georgia, serif;
         }
       </style>
     </head>
     <body>
-      <div id="card-container">
-        <!-- Inner Border -->
-        <div class="inner-border"></div>
+      <div id="card-wrapper">
+        <div id="card-container">
+          <!-- Inner Border -->
+          <div class="inner-border"></div>
 
-        <!-- Corner decorations -->
-        <div class="dot dot-tl"></div>
-        <div class="dot dot-tr"></div>
-        <div class="dot dot-bl"></div>
-        <div class="dot dot-br"></div>
+          <!-- Corner Flourishes -->
+          <div class="flourish fl-tl">❧</div>
+          <div class="flourish fl-tr">❧</div>
+          <div class="flourish fl-bl">❧</div>
+          <div class="flourish fl-br">❧</div>
 
-        <!-- Base64 Watermark -->
-        ${watermarkBase64 ? `<img src="${watermarkBase64}" class="watermark" alt="watermark">` : ''}
-
-        <!-- Header Panel -->
-        <div class="header-panel">
-          <div class="ticket-number">Nº ${ticket.ticket_number}</div>
-          <h2 class="title">Bingo</h2>
-          <h3 class="title-sub">Chaqueño</h3>
-          <div class="subtitle-row">
-            <span class="flower">✿</span>
-            <div class="divider"></div>
-            <span class="version">3 × 15</span>
-            <div class="divider"></div>
-            <span class="flower">✿</span>
+          <!-- Top Header Panel -->
+          <div class="header-panel">
+            <div class="header-logo">
+              ${bolilloLogoBase64 ? `<img src="${bolilloLogoBase64}" alt="Logo">` : '<div style="font-weight:900;color:#8B1A1A;">BOLILLO</div>'}
+            </div>
+            <div class="header-middle">
+              <div class="ribbon">CARTÓN #</div>
+              <div class="ticket-number-display">${formattedTicketNum}</div>
+            </div>
+            <div class="header-right">
+              <span class="valor-title">VALOR:</span>
+              <div class="valor-divider"></div>
+              <span class="valor-amount">${ticketValue}</span>
+              <div class="valor-divider"></div>
+            </div>
           </div>
-        </div>
 
-        <!-- BINGO Letters -->
-        <div class="letters-panel">
-          ${BINGO_LETTERS.map(l => `<div class="letter">${l}</div>`).join('')}
-        </div>
-
-        <!-- Number Matrix Grid -->
-        <div class="grid-panel">
-          <div class="grid">
-            ${gridCellsHtml}
+          <!-- 5x5 Grid Box -->
+          <div class="grid-container">
+            <div class="letters-panel">
+              ${BINGO_LETTERS.map(l => `<div class="letter">${l}</div>`).join('')}
+            </div>
+            <div class="grid">
+              ${gridCellsHtml}
+            </div>
           </div>
-        </div>
 
-        <!-- Footer Info -->
-        <div class="footer">
-          <div class="footer-logo">
-            <span class="footer-text">♦ Bingo Chaqueño</span>
+          <!-- Footer Ribbon -->
+          <div class="footer">
+            <span class="footer-symbol">❖</span>
+            <div class="footer-ribbon">¡BUENA SUERTE!</div>
+            <span class="footer-symbol">❖</span>
           </div>
         </div>
       </div>
@@ -556,10 +469,10 @@ async function renderTicketToImage(ticket) {
   // Create a blank tab
   const page = await client.pupBrowser.newPage();
 
-  // Set the viewport to capture only the card bounds perfectly
+  // Set the viewport with generous margins so no borders or footers are clipped
   await page.setViewport({
-    width: 390,
-    height: 530,
+    width: 480,
+    height: 600,
     deviceScaleFactor: 2 // High-definition Retina scale (high detail)
   });
 
@@ -568,11 +481,11 @@ async function renderTicketToImage(ticket) {
   // Load HTML directly into Puppeteer
   await page.setContent(html, { waitUntil: 'load' });
 
-  // Locate the #card-container element
-  const cardElement = await page.$('#card-container');
+  // Locate the #card-wrapper element
+  const cardElement = await page.$('#card-wrapper');
   if (!cardElement) {
     await page.close();
-    throw new Error('No se pudo encontrar el contenedor del cartón (#card-container) en el HTML.');
+    throw new Error('No se pudo encontrar el contenedor del cartón (#card-wrapper) en el HTML.');
   }
 
   // Screenshot buffer
@@ -619,35 +532,6 @@ app.post('/api/save-seller-rows', (req, res) => {
     res.json({ success: true });
   } catch (error) {
     console.error('[Database Error] No se pudo escribir las filas en el archivo central:', error.message);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// --- SELLER GROUPS (Grupos de Vendedores Compartidos) ---
-const sellerGroupsFilePath = path.join(__dirname, '../public/bingo_seller_groups.json');
-
-app.get('/api/seller-groups', (req, res) => {
-  try {
-    if (fs.existsSync(sellerGroupsFilePath)) {
-      const data = fs.readFileSync(sellerGroupsFilePath, 'utf8');
-      return res.json(JSON.parse(data));
-    }
-    res.json([]);
-  } catch (error) {
-    res.json([]);
-  }
-});
-
-app.post('/api/seller-groups', (req, res) => {
-  const groups = req.body;
-  if (!Array.isArray(groups)) {
-    return res.status(400).json({ error: 'Debe ser una matriz JSON' });
-  }
-  try {
-    fs.writeFileSync(sellerGroupsFilePath, JSON.stringify(groups, null, 2), 'utf8');
-    console.log(`[Database] Se guardaron ${groups.length} grupos de vendedores.`);
-    res.json({ success: true });
-  } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
@@ -729,16 +613,16 @@ const client = new Client({
   }),
   puppeteer: {
     headless: true,
-    executablePath: '/home/administrator/.cache/puppeteer/chrome/linux-146.0.7680.31/chrome-linux64/chrome',
     args: [
       '--no-sandbox',
       '--disable-setuid-sandbox',
       '--disable-dev-shm-usage',
+      '--disable-accelerated-2d-canvas',
+      '--no-first-run',
+      '--no-zygote',
+      '--single-process',
       '--disable-gpu'
     ]
-  },
-  webVersionCache: {
-    type: 'none'
   }
 });
 
@@ -760,25 +644,10 @@ client.on('ready', () => {
 });
 
 // Message Listener
-
 client.on('message', async (msg) => {
-  // Monkey-patch msg.reply to survive Puppeteer page crashes
-  const originalReply = msg.reply.bind(msg);
-  msg.reply = async (content) => {
-    try {
-      return await originalReply(content);
-    } catch (e) {
-      if (e.message && e.message.includes('Target closed')) {
-        console.warn('[BOT] Page closed on reply, retrying with sendMessage...');
-        return await client.sendMessage(msg.from, content);
-      }
-      throw e;
-    }
-  };
-
   try {
     const text = msg.body.trim();
-    let lowerText = text.toLowerCase();
+    const lowerText = text.toLowerCase();
     const userPhoneNumber = msg.from.split('@')[0]; // e.g. "59178240880"
 
     // 0. Super Admin Command Router
@@ -791,19 +660,6 @@ client.on('message', async (msg) => {
 
     const isSuperAdmin = superAdmins.includes(userPhoneNumber);
 
-    // --- AI PRE-PROCESSING: DESHABILITADO - usando comandos directos ---
-    // const aiResult = await processMessageWithAI(text, lowerText, userPhoneNumber, isSuperAdmin);
-    // if (aiResult) {
-    //   if (aiResult.action === 'reply') {
-    //     await msg.reply(aiResult.reply);
-    //     return;
-    //   }
-    //   if (aiResult.action === 'command' && aiResult.normalizedText) {
-    //     lowerText = aiResult.normalizedText.toLowerCase().trim();
-    //     console.log('[AI] Texto normalizado:', lowerText);
-    //   }
-    // }
-
     if (isSuperAdmin) {
       // Admin Help / Menu
       if (['admin', 'menu', 'ayuda admin', 'help admin'].includes(lowerText)) {
@@ -812,7 +668,7 @@ client.on('message', async (msg) => {
           `━━━━━━━━━━━━━━━━━━\n` +
           `Hola Admin. Tienes acceso a los siguientes comandos automáticos:\n\n` +
           `🆓 Escribe *libres* para ver las últimas 5 filas libres para registrar.\n` +
-          `➕ Escribe *nueva fila* para crear una nueva fila vacía con 15 cartones.\n` +
+          `➕ Escribe *nueva fila* para crear una nueva fila vacía con 50 cartones.\n` +
           `👤 Escribe *vendedor [nombre] [teléfono]* para registrar un nuevo vendedor.\n` +
           `   _(Ejemplo: vendedor Micaela Espinoza 59178240880)_\n` +
           `🔗 Escribe *asignar [número_fila] [teléfono_vendedor]* para asignarle una fila libre.\n` +
@@ -876,21 +732,14 @@ client.on('message', async (msg) => {
           }
         });
 
-        const availableTickets = ticketsData.filter(t =>
-          !assignedNumbers.has(String(t.ticket_number)) && Number(t.ticket_number) < 5000
-        );
-        if (availableTickets.length < 15) {
-          await msg.reply(`❌ *No hay suficientes cartones libres (< 5000).* Quedan solo ${availableTickets.length} libres, se requieren 15.`);
+        const availableTickets = ticketsData.filter(t => !assignedNumbers.has(String(t.ticket_number)));
+        if (availableTickets.length < 50) {
+          await msg.reply(`❌ *No hay suficientes cartones libres.* Quedan solo ${availableTickets.length} libres, se requieren 50.`);
           return;
         }
 
         const shuffled = [...availableTickets].sort(() => 0.5 - Math.random());
-        const rowNumbers = shuffled.slice(0, 15).map(t => t.ticket_number);
-        // Fisher-Yates shuffle to mix low/high within the row
-        for (let j = rowNumbers.length - 1; j > 0; j--) {
-          const k = Math.floor(Math.random() * (j + 1));
-          [rowNumbers[j], rowNumbers[k]] = [rowNumbers[k], rowNumbers[j]];
-        }
+        const rowNumbers = shuffled.slice(0, 50).map(t => t.ticket_number);
 
         const newRowId = sellerRows.length > 0 ? Math.max(...sellerRows.map(r => r.id)) + 1 : 1;
         const newRow = {
@@ -902,7 +751,7 @@ client.on('message', async (msg) => {
         sellerRows.push(newRow);
         try {
           fs.writeFileSync(sellerRowsFilePath, JSON.stringify(sellerRows, null, 2), 'utf-8');
-          await msg.reply(`✅ *¡Fila #${newRowId} creada con éxito!* \nContiene 15 cartones libres listos para vender.\nUsa *libres* para ver la lista.`);
+          await msg.reply(`✅ *¡Fila #${newRowId} creada con éxito!* \nContiene 50 cartones libres listos para vender.\nUsa *libres* para ver la lista.`);
         } catch (err) {
           await msg.reply(`❌ *Error al guardar la nueva fila en el servidor:* ${err.message}`);
         }
@@ -911,7 +760,7 @@ client.on('message', async (msg) => {
 
       // Add a new seller
       if (lowerText.startsWith('vendedor ')) {
-        const match = lowerText.match(/^vendedor\s+(.+?)\s+(\d+)$/i);
+        const match = msg.body.match(/^vendedor\s+(.+?)\s+(\d+)$/i);
         if (!match) {
           await msg.reply(`⚠️ *Formato incorrecto.* Usa:\n*vendedor [nombre] [teléfono]*\n_(Ej: vendedor Micaela Espinoza 59178240880)_`);
           return;
@@ -1111,26 +960,7 @@ client.on('message', async (msg) => {
       }
 
       // Find ALL rows assigned to this seller (by name, phone number, or registered ID)
-      let matchedSellerRows = sellerRows.filter(row => isRowMatchingSeller(row, registeredName, userPhoneNumber, matchedSellerObj));
-
-      // Check seller groups for shared row access
-      let sellerGroups = [];
-      try {
-        if (fs.existsSync(sellerGroupsFilePath)) {
-          const rawGroups = fs.readFileSync(sellerGroupsFilePath, 'utf-8');
-          if (rawGroups.trim()) sellerGroups = JSON.parse(rawGroups);
-        }
-      } catch (err) {}
-
-      const matchedGroups = sellerGroups.filter(g =>
-        g.sellerIds && g.sellerIds.some(sid => String(sid).trim() === String(userPhoneNumber).trim())
-      );
-      const groupRowIds = new Set();
-      matchedGroups.forEach(g => { if (g.rowIds) g.rowIds.forEach(rid => groupRowIds.add(rid)); });
-      const groupRows = sellerRows.filter(row => groupRowIds.has(row.id));
-      groupRows.forEach(gr => {
-        if (!matchedSellerRows.find(mr => mr.id === gr.id)) matchedSellerRows.push(gr);
-      });
+      const matchedSellerRows = sellerRows.filter(row => isRowMatchingSeller(row, registeredName, userPhoneNumber, matchedSellerObj));
 
       if (matchedSellerRows.length === 0) {
         const displayName = registeredName || `+${userPhoneNumber}`;
@@ -1158,203 +988,7 @@ client.on('message', async (msg) => {
 
     // 3. Check if user is asking for a gift ticket
     if (lowerText === 'regalo' || lowerText === 'regalos') {
-      console.log(`[BOT] Solicitud de cartones de regalo del número ${userPhoneNumber}`);
-      
-      // Load whitelisted sellers
-      let authorized = [];
-      try {
-        if (fs.existsSync(authorizedFilePath)) {
-          const rawAuth = fs.readFileSync(authorizedFilePath, 'utf-8');
-          if (rawAuth.trim()) {
-            authorized = JSON.parse(rawAuth);
-          }
-        }
-      } catch (err) {
-        console.warn('[BOT Warning] No se pudo leer el archivo de autorizados:', err.message);
-      }
-
-      const matchedSellerObj = authorized.find(seller => isMatchSellerId(seller, userPhoneNumber));
-
-      if (!matchedSellerObj) {
-        await msg.reply(`❌ *Tu número (ID: ${userPhoneNumber}) no está habilitado.* \n\nEnvía la palabra *id* para obtener tu identificador de vendedor y compártelo con el administrador.`);
-        return;
-      }
-
-      const registeredName = typeof matchedSellerObj === 'object' ? (matchedSellerObj.name || '') : '';
-
-      // Load downloads/logs to count requested tickets
-      let logs = [];
-      try {
-        if (fs.existsSync(downloadsFilePath)) {
-          const rawLogs = fs.readFileSync(downloadsFilePath, 'utf-8');
-          if (rawLogs.trim()) {
-            logs = JSON.parse(rawLogs);
-          }
-        }
-      } catch (err) {
-        console.warn('[BOT Warning] No se pudo leer el archivo de descargas:', err.message);
-      }
-
-      // Count regular downloads by this seller
-      const regularCount = logs.filter(log => {
-        return String(log.sellerId).trim() === String(userPhoneNumber).trim() && !log.isGift;
-      }).length;
-
-      // Count gift downloads by this seller
-      const giftCount = logs.filter(log => {
-        return String(log.sellerId).trim() === String(userPhoneNumber).trim() && log.isGift;
-      }).length;
-
-      // --- COMBO DETECTION: Check if the seller completed a full row (15/15 tickets sold) ---
-      let sellerRows = [];
-      try {
-        if (fs.existsSync(sellerRowsFilePath)) {
-          const rawRows = fs.readFileSync(sellerRowsFilePath, 'utf-8');
-          if (rawRows.trim()) {
-            sellerRows = JSON.parse(rawRows);
-          }
-        }
-      } catch (err) {
-        console.warn('[BOT Warning] No se pudo leer el archivo de filas:', err.message);
-      }
-
-      const matchedSellerRows = sellerRows.filter(row => isRowMatchingSeller(row, registeredName, userPhoneNumber, matchedSellerObj));
-
-      // Check how many combos (full rows of 15) the seller has completed
-      const sellerRegularLogs = logs.filter(log => String(log.sellerId).trim() === String(userPhoneNumber).trim() && !log.isGift);
-      const downloadedBySellerSet = new Set(sellerRegularLogs.map(log => String(parseInt(log.ticketNumber, 10))));
-
-      let completedCombos = 0;
-      matchedSellerRows.forEach(row => {
-        if (row.numbers && Array.isArray(row.numbers)) {
-          const allSold = row.numbers.every(num => downloadedBySellerSet.has(String(parseInt(num, 10))));
-          if (allSold) completedCombos++;
-        }
-      });
-
-      // Calculate allowed gifts:
-      // - 2 gift tickets for every 3 regular tickets sold
-      // - 2 gift tickets for every completed combo (full row of 15)
-      const giftsFromRegular = Math.floor(regularCount / 3) * 2;
-      const giftsFromCombos = completedCombos * 2;
-      const allowedGifts = giftsFromRegular + giftsFromCombos;
-
-      if (regularCount < 3 && completedCombos === 0) {
-        await msg.reply(`❌ *Para recibir cartones de regalo, primero debes haber vendido al menos 3 cartones normales O haber completado un combo (fila completa de 15).* \n\nActualmente has solicitado *${regularCount}/3* cartones.`);
-        return;
-      }
-
-      if (giftCount >= allowedGifts) {
-        let detailMsg = `Has solicitado *${regularCount}* cartones normales`;
-        if (completedCombos > 0) detailMsg += ` y completaste *${completedCombos}* combo(s)`;
-        detailMsg += `, y ya recibiste *${giftCount}* de regalo.`;
-        detailMsg += `\n(Obtienes *2 de regalo* por cada 3 solicitados o por cada combo completado).`;
-        await msg.reply(`❌ *Ya has reclamado todos tus cartones de regalo disponibles.* \n\n${detailMsg}`);
-        return;
-      }
-
-      // Ensure ticketsData is loaded
-      if (ticketsData.length === 0 && fs.existsSync(ticketsFilePath)) {
-        try {
-          ticketsData = JSON.parse(fs.readFileSync(ticketsFilePath, 'utf8'));
-        } catch (e) {}
-      }
-
-      if (ticketsData.length === 0) {
-        await msg.reply('❌ *Lo sentimos, la base de datos de cartones está vacía o no cargada en el servidor.*');
-        return;
-      }
-
-      // Collect assigned and downloaded numbers for filtering available gift tickets
-      const assignedNumbers = new Set();
-      sellerRows.forEach(row => {
-        if (row.numbers && Array.isArray(row.numbers)) {
-          row.numbers.forEach(num => assignedNumbers.add(String(parseInt(num, 10))));
-        }
-      });
-
-      const downloadedNumbers = new Set(logs.map(log => String(parseInt(log.ticketNumber, 10))));
-
-      // Filter tickets that are not assigned to anyone and have not been downloaded
-      let availableGiftTickets = ticketsData.filter(t => {
-        const numStr = String(parseInt(t.ticket_number, 10));
-        return !assignedNumbers.has(numStr) && !downloadedNumbers.has(numStr);
-      });
-
-      // Fallback 1: If no completely unassigned/undownloaded tickets, try any undownloaded ticket
-      if (availableGiftTickets.length === 0) {
-        availableGiftTickets = ticketsData.filter(t => {
-          const numStr = String(parseInt(t.ticket_number, 10));
-          return !downloadedNumbers.has(numStr);
-        });
-      }
-
-      // Fallback 2: If everything is downloaded, just choose any ticket
-      if (availableGiftTickets.length === 0) {
-        availableGiftTickets = ticketsData;
-      }
-
-      if (availableGiftTickets.length === 0) {
-        await msg.reply('❌ *Lo sentimos, no quedan cartones disponibles en el sistema para entregar como regalo.*');
-        return;
-      }
-
-      // Determine how many gifts to deliver this time (max 2 per request, but respect remaining allowance)
-      const remainingGifts = allowedGifts - giftCount;
-      const giftsToDeliver = Math.min(2, remainingGifts, availableGiftTickets.length);
-
-      // Inform user we are generating their gift tickets
-      await client.sendMessage(msg.from, `🎁🎁 _¡Felicidades! Tienes derecho a *${giftsToDeliver} cartón(es) de regalo*._\n🔮 _Generando tus tarjetas premium de regalo..._`);
-
-      // Render & Send each gift ticket
-      let sentCount = 0;
-      const usedIndices = new Set();
-
-      for (let g = 0; g < giftsToDeliver; g++) {
-        try {
-          // Select a random ticket that hasn't been picked in this batch
-          let randomIndex;
-          do {
-            randomIndex = Math.floor(Math.random() * availableGiftTickets.length);
-          } while (usedIndices.has(randomIndex) && usedIndices.size < availableGiftTickets.length);
-          usedIndices.add(randomIndex);
-
-          const giftTicket = availableGiftTickets[randomIndex];
-          const ticketNumber = giftTicket.ticket_number;
-
-          const imageBuffer = await renderTicketToImage(giftTicket);
-          const media = new MessageMedia('image/png', imageBuffer.toString('base64'), `carton-regalo-${ticketNumber}.png`);
-          await client.sendMessage(msg.from, media, { caption: `🎁 ¡Cartón de Regalo ${g + 1}/${giftsToDeliver} — *#${ticketNumber}*! ¡Muchísima suerte! 🍀` });
-          console.log(`[BOT] Cartón de Regalo #${ticketNumber} (${g + 1}/${giftsToDeliver}) enviado con éxito.`);
-
-          // Register in the downloads log with "isGift: true"
-          logs.push({
-            ticketNumber: ticketNumber,
-            downloadedAt: new Date().toISOString(),
-            sellerId: userPhoneNumber,
-            sellerName: registeredName || 'Sin Nombre',
-            isGift: true
-          });
-
-          // Also add to downloadedNumbers to avoid giving the same ticket twice
-          downloadedNumbers.add(String(parseInt(ticketNumber, 10)));
-
-          sentCount++;
-        } catch (err) {
-          console.error(`[BOT Error] Error al generar o enviar cartón de regalo ${g + 1}/${giftsToDeliver}:`, err);
-        }
-      }
-
-      // Save all gift logs at once
-      if (sentCount > 0) {
-        fs.writeFileSync(downloadsFilePath, JSON.stringify(logs, null, 2));
-        console.log(`[BOT Sync] ${sentCount} cartón(es) de regalo registrados en el Panel de Ventas.`);
-      }
-
-      if (sentCount < giftsToDeliver) {
-        await msg.reply(`⚠️ *Se pudieron entregar ${sentCount} de ${giftsToDeliver} cartones de regalo.* Intenta de nuevo con la palabra *regalo* para los restantes.`);
-      }
-
+      await msg.reply('❌ *La función de cartones de regalo ha sido desactivada por el administrador.*');
       return;
     }
 
@@ -1405,41 +1039,7 @@ client.on('message', async (msg) => {
       // Find ALL rows assigned to this seller (by name, phone number, or registered ID)
       const matchedSellerRows = sellerRows.filter(row => isRowMatchingSeller(row, registeredName, userPhoneNumber, matchedSellerObj));
 
-      // 3. Check if seller belongs to any group with shared rows
-      let sellerGroups = [];
-      try {
-        if (fs.existsSync(sellerGroupsFilePath)) {
-          const rawGroups = fs.readFileSync(sellerGroupsFilePath, 'utf-8');
-          if (rawGroups.trim()) {
-            sellerGroups = JSON.parse(rawGroups);
-          }
-        }
-      } catch (err) {
-        console.warn('[BOT Warning] No se pudo leer el archivo de grupos:', err.message);
-      }
-
-      // Find all groups where this seller is a member
-      const matchedGroups = sellerGroups.filter(g =>
-        g.sellerIds && g.sellerIds.some(sid => String(sid).trim() === String(userPhoneNumber).trim())
-      );
-
-      // If seller is in groups, also add those groups' rows
-      const groupRowIds = new Set();
-      matchedGroups.forEach(g => {
-        if (g.rowIds) g.rowIds.forEach(rid => groupRowIds.add(rid));
-      });
-
-      const groupRows = sellerRows.filter(row => groupRowIds.has(row.id));
-
-      // Merge individual rows + group rows (avoid duplicates by row id)
-      const allMatchedRows = [...matchedSellerRows];
-      groupRows.forEach(gr => {
-        if (!allMatchedRows.find(mr => mr.id === gr.id)) {
-          allMatchedRows.push(gr);
-        }
-      });
-
-      if (allMatchedRows.length === 0) {
+      if (matchedSellerRows.length === 0) {
         console.log(`[BOT Block] Vendedor +${userPhoneNumber} (${registeredName || 'Sin Nombre'}) no tiene filas asignadas.`);
         const displayName = registeredName || `+${userPhoneNumber}`;
         await msg.reply(`❌ *Hola. No tienes cartones asignados, pide que te asignen cartones ${displayName}*`);
@@ -1447,7 +1047,7 @@ client.on('message', async (msg) => {
       }
 
       // Combine all numbers from all matched rows and check if ticket belongs to any of them
-      const allAssignedNumbers = allMatchedRows.flatMap(row => row.numbers);
+      const allAssignedNumbers = matchedSellerRows.flatMap(row => row.numbers);
       const allAssignedNumbersSet = new Set(allAssignedNumbers.map(num => String(parseInt(num, 10))));
 
       // Reload ticketsData if empty to ensure it's synced with any recent website upload
@@ -1568,12 +1168,12 @@ client.on('message', async (msg) => {
       return;
     }
 
-    // Default catch-all — always respond if nothing matched above
+    // Default catch-all instructions if they talk to the bot but don't ask for a number
     const welcomeKeywords = ['hola', 'buen', 'bot', 'info', 'ayuda', 'cómo', 'como'];
     const matchesWelcome = welcomeKeywords.some(w => lowerText.includes(w));
-
-    if (matchesWelcome || true) {
-      await msg.reply(`🎱 *¡BIENVENIDO AL BOT DE BINGO CHAQUEÑO!* 🎱\nTu asistente automático para el juego.\n━━━━━━━━━━━━━━━━━━\nPor favor, elige una opción respondiendo con la *PALABRA CLAVE* de lo que deseas hacer:\n\n🔑 Escribe *id* para Registrarte / Solicitar tu ID de vendedor.\n🎟️ Escribe *cartones* para Ver tus cartones asignados.\n🔢 Escribe el *número de tu cartón* (ejemplo: *1*, *2*, *42*) para descargarlo.\n🎁 Escribe *regalo* para reclamar tus *2 cartones de regalo* (disponibles tras vender 3 normales o completar un combo).\n━━━━━━━━━━━━━━━━━━\n🍀 _¡Mucha suerte en tus ventas!_ 🍀`);
+    
+    if (matchesWelcome) {
+      await msg.reply(`🎱 *¡BIENVENIDO AL BOT DE BINGO EL BOLILLO!* 🎱\nTu asistente automático para el juego.\n━━━━━━━━━━━━━━━━━━\nPor favor, elige una opción respondiendo con la *PALABRA CLAVE* de lo que deseas hacer:\n\n🔑 Escribe *id* para Registrarte / Solicitar tu ID de vendedor.\n🎟️ Escribe *cartones* para Ver tus cartones asignados.\n🔢 Escribe el *número de tu cartón* (ejemplo: *1*, *2*, *42*) para descargarlo.\n━━━━━━━━━━━━━━━━━━\n🍀 _¡Mucha suerte en tus ventas!_ 🍀`);
     }
 
   } catch (error) {
@@ -1581,19 +1181,9 @@ client.on('message', async (msg) => {
   }
 });
 
-client.on('disconnected', async (reason) => {
+client.on('disconnected', (reason) => {
   console.warn('[BOT Warning] Cliente de WhatsApp desconectado. Razón:', reason);
   botReady = false;
-  // Auto-reconnect after 5 seconds
-  console.log('[BOT] Intentando reconexión en 5 segundos...');
-  setTimeout(async () => {
-    try {
-      await client.initialize();
-      console.log('[BOT] Reconexión iniciada.');
-    } catch (e) {
-      console.error('[BOT Error] Falló la reconexión:', e.message);
-    }
-  }, 5000);
 });
 
 client.initialize();

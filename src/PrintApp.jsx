@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { FileUp, Download, Home } from 'lucide-react'
 import { jsPDF } from 'jspdf'
-import comicKids from './assets/comic_kids.png'
+import horseWatermark from './assets/horse_watermark.png'
+import bolilloLogo from './assets/bolillo_logo.jpg'
 import BingoCard from './components/BingoCard.jsx'
 
 const BINGO_LETTERS = ['B', 'I', 'N', 'G', 'O']
@@ -42,7 +43,8 @@ export default function PrintApp() {
   const handleGeneratePDF = async () => {
     setIsGenerating(true)
     try {
-      const logoB64 = await loadImageAsBase64(comicKids)
+      const logoB64 = await loadImageAsBase64(horseWatermark)
+      const bolilloBase64 = await loadImageAsBase64(bolilloLogo).catch(() => null)
       const doc = new jsPDF('p', 'mm', 'a4')
       const PW = doc.internal.pageSize.getWidth()  // 210mm
 
@@ -63,128 +65,153 @@ export default function PrintApp() {
         const ticket = tickets[idx]
 
         // ── Card background ──
-        doc.setFillColor(230, 242, 254) // Soft light blue background
-        doc.setDrawColor(8, 26, 54) // Dark blue border
+        doc.setFillColor(251, 246, 235) // Warm cream/parchment background color
+        doc.setDrawColor(142, 109, 79) // Sepia/brown border
         doc.setLineWidth(1.2)
         doc.roundedRect(X, Y, TW, TH, 6, 6, 'FD')
 
-        // ── Inner sketchy border ──
-        doc.setDrawColor(8, 26, 54)
-        doc.setLineWidth(0.4)
-        doc.roundedRect(X + 1.2, Y + 1.2, TW - 2.4, TH - 2.4, 5.2, 5.2, 'D')
+        // ── Inner dashed border ──
+        doc.setDrawColor(142, 109, 79)
+        doc.setLineWidth(0.3)
+        doc.setLineDashPattern([2, 2], 0)
+        doc.roundedRect(X + 2, Y + 2, TW - 4, TH - 4, 5, 5, 'D')
+        doc.setLineDashPattern([], 0) // reset dash pattern
 
-        // ── Header Card Number Top Left ──
-        doc.setTextColor(8, 26, 54)
-        doc.setFont('helvetica', 'bold')
-        doc.setFontSize(8)
-        doc.text(`Nº ${ticket.ticket_number}`, X + 4, Y + 6)
+        // Decorative corner dots
+        doc.setFillColor(142, 109, 79)
+        doc.circle(X + 3.5, Y + 3.5, 0.6, 'F')
+        doc.circle(X + TW - 3.5, Y + 3.5, 0.6, 'F')
+        doc.circle(X + 3.5, Y + TH - 3.5, 0.6, 'F')
+        doc.circle(X + TW - 3.5, Y + TH - 3.5, 0.6, 'F')
 
-        // ── Speech Bubble Title ──
-        doc.setFillColor(255, 255, 255)
-        doc.setDrawColor(8, 26, 54)
-        doc.setLineWidth(0.8)
-        doc.roundedRect(X + (TW - 56) / 2, Y + 8, 56, 17, 4, 4, 'FD')
-
-        // Title speech bubble tail
-        doc.setFillColor(255, 255, 255)
-        doc.setDrawColor(8, 26, 54)
-        doc.setLineWidth(0.8)
-        const bx = X + (TW - 56) / 2 + 10
-        const by = Y + 25
-        doc.triangle(bx, by, bx + 4, by, bx + 2, by + 2, 'FD')
-        // remove division line
-        doc.setDrawColor(255, 255, 255)
-        doc.setLineWidth(1.0)
-        doc.line(bx + 0.5, by, bx + 3.5, by)
-
-        // Title Texts
-        doc.setTextColor(249, 115, 22) // Orange-yellow color
-        doc.setFont('helvetica', 'bold')
-        doc.setFontSize(16)
-        doc.text('BINGO', X + TW / 2, Y + 14, { align: 'center' })
-        doc.setFontSize(12)
-        doc.text('FAMILIAR', X + TW / 2, Y + 20, { align: 'center' })
-
-        // ── Middle row ──
-        doc.saveGraphicsState()
-        doc.addImage(logoB64, 'PNG', X + 5, Y + 27, 24, 11)
-        doc.restoreGraphicsState()
-
-        doc.setTextColor(8, 26, 54)
-        doc.setFont('helvetica', 'bold')
-        doc.setFontSize(8.5)
-        doc.text('3x15', X + 39, Y + 31)
-        doc.text('FLOWER', X + 39, Y + 36)
-
-        // ── BINGO letter header row ──
         const pad = 4
-        const hRowY = Y + 40
+        const headH = 20
+
+        const formattedNum = String(ticket.ticket_number || 1).padStart(6, '0')
+        const valText = ticket.price || '20 BS'
+
+        // ── Outer Card Background ──
+        doc.setFillColor(250, 246, 239) // #FAF6EF
+        doc.roundedRect(X, Y, TW, TH, 3, 3, 'F')
+
+        // Outer Gold Border
+        doc.setDrawColor(197, 160, 82) // #C5A052
+        doc.setLineWidth(0.8)
+        doc.roundedRect(X, Y, TW, TH, 3, 3, 'D')
+
+        // Inner Thin Gold Border
+        doc.setLineWidth(0.2)
+        doc.roundedRect(X + 1, Y + 1, TW - 2, TH - 2, 2.5, 2.5, 'D')
+
+        // ── Top Header Section ──
+        // Logo Left
+        if (bolilloBase64) {
+          doc.addImage(bolilloBase64, 'JPEG', X + 3, Y + 3, 16, 16)
+        }
+
+        // Ribbon Middle: TABLA # & Padded Number
+        doc.setFillColor(139, 26, 26) // #8B1A1A
+        doc.rect(X + TW/2 - 12, Y + 3, 24, 4, 'F')
+
+        doc.setTextColor(255, 255, 255)
+        doc.setFont('times', 'bold')
+        doc.setFontSize(7)
+        doc.text('CARTÓN #', X + TW / 2, Y + 6, { align: 'center' })
+
+        doc.setTextColor(17, 17, 17)
+        doc.setFontSize(16)
+        doc.text(formattedNum, X + TW / 2, Y + 15, { align: 'center' })
+
+        // Right: VALOR & Price
+        doc.setTextColor(139, 26, 26)
+        doc.setFontSize(7)
+        doc.text('VALOR:', X + TW - 11, Y + 6, { align: 'center' })
+
+        doc.setDrawColor(197, 160, 82)
+        doc.setLineWidth(0.2)
+        doc.line(X + TW - 18, Y + 7.5, X + TW - 4, Y + 7.5)
+        doc.line(X + TW - 18, Y + 14.5, X + TW - 4, Y + 14.5)
+
+        doc.setTextColor(17, 17, 17)
+        doc.setFontSize(10)
+        doc.text(valText, X + TW - 11, Y + 12.5, { align: 'center' })
+
+        // ── 5x5 Grid Section ──
+        const gridY = Y + 20
         const mW = TW - pad * 2
         const cW = mW / 5
-        const cH = 15 // cell height
+        const cH = 14
 
-        doc.setDrawColor(8, 26, 54)
-        doc.setLineWidth(0.6)
-        doc.line(X + pad, hRowY, X + TW - pad, hRowY)
-        doc.line(X + pad, hRowY + 7.5, X + TW - pad, hRowY + 7.5)
+        // Grid Frame
+        doc.setDrawColor(197, 160, 82)
+        doc.setLineWidth(0.5)
+        doc.roundedRect(X + pad, gridY, mW, 6 + 5 * cH, 1, 1, 'D')
+
+        // Header Bar (B I N G O)
+        doc.setFillColor(139, 26, 26)
+        doc.rect(X + pad, gridY, mW, 6, 'F')
+
+        doc.setDrawColor(197, 160, 82)
+        doc.setLineWidth(0.3)
+        doc.line(X + pad, gridY + 6, X + TW - pad, gridY + 6)
 
         BINGO_LETTERS.forEach((l, i) => {
           const hX = X + pad + i * cW
-          doc.setTextColor(8, 26, 54)
-          doc.setFont('helvetica', 'bold')
-          doc.setFontSize(12)
-          doc.text(l, hX + cW / 2, hRowY + 5.5, { align: 'center' })
+          doc.setTextColor(226, 192, 112) // Gold text
+          doc.setFont('times', 'bold')
+          doc.setFontSize(11)
+          doc.text(l, hX + cW / 2, gridY + 4.5, { align: 'center' })
         })
 
-        // ── Number grid ──
-        const gridY = hRowY + 10.5
+        // Grid Cells
+        const cellsStartY = gridY + 6
         for (let r = 0; r < 5; r++) {
           for (let c = 0; c < 5; c++) {
             const val = ticket.matrix[r][c]
             const cX = X + pad + c * cW
-            const cY = gridY + r * cH
+            const cY = cellsStartY + r * cH
             const free = val === 0
 
+            doc.setFillColor(free ? 245 : 255, free ? 238 : 253, free ? 227 : 249)
+            doc.setDrawColor(197, 160, 82)
+            doc.setLineWidth(0.2)
+            doc.rect(cX, cY, cW, cH, 'FD')
+
             if (free) {
-              doc.setFillColor(254, 240, 138) // light yellow
-              doc.setDrawColor(8, 26, 54)
-              doc.setLineWidth(0.6)
-              doc.roundedRect(cX + 0.8, cY + 0.8, cW - 1.6, cH - 1.6, 2.5, 2.5, 'FD')
+              // Circular Red Medallion
+              const rad = Math.min(cW, cH) * 0.35
+              doc.setFillColor(139, 26, 26)
+              doc.setDrawColor(197, 160, 82)
+              doc.setLineWidth(0.4)
+              doc.circle(cX + cW/2, cY + cH/2, rad, 'FD')
 
-              doc.setTextColor(220, 38, 38)
-              doc.setFont('helvetica', 'bold')
-              doc.setFontSize(9)
-              doc.text('FREE!', cX + cW/2, cY + cH/2 + 3.0, { align: 'center' })
+              doc.setTextColor(226, 192, 112)
+              doc.setFont('times', 'bold')
+              doc.setFontSize(8)
+              doc.text('B', cX + cW/2, cY + cH/2 + 2.5, { align: 'center' })
             } else {
-              doc.setFillColor(240, 249, 255) // light blue
-              doc.setDrawColor(8, 26, 54)
-              doc.setLineWidth(0.6)
-              doc.roundedRect(cX + 0.8, cY + 0.8, cW - 1.6, cH - 1.6, 2.5, 2.5, 'FD')
-
-              doc.setTextColor(8, 26, 54)
-              doc.setFont('helvetica', 'bold')
-              doc.setFontSize(13)
-              doc.text(String(val), cX + cW/2, cY + cH/2 + 4.2, { align: 'center' })
+              doc.setTextColor(17, 17, 17)
+              doc.setFont('times', 'bold')
+              doc.setFontSize(12)
+              doc.text(String(val), cX + cW/2, cY + cH/2 + 3.8, { align: 'center' })
             }
           }
         }
 
-        // ── Footer ──
+        // ── Footer Ribbon ──
         const footerY = Y + TH - 4
-        doc.setDrawColor(8, 26, 54)
-        doc.setLineWidth(0.4)
-        doc.line(X + 10, Y + TH - 7.5, X + TW - 10, Y + TH - 7.5)
+        doc.setFillColor(139, 26, 26)
+        doc.rect(X + TW/2 - 14, Y + TH - 7, 28, 4, 'F')
 
-        doc.setTextColor(8, 26, 54)
-        doc.setFont('helvetica', 'bold')
-        doc.setFontSize(7.5)
-        doc.text('EDICIÓN 75 FAMILIAR', X + 10, footerY)
-        doc.text('♦ BINGO FAMILIAR', X + TW - 10, footerY, { align: 'right' })
+        doc.setTextColor(255, 255, 255)
+        doc.setFont('times', 'bold')
+        doc.setFontSize(6.5)
+        doc.text('¡BUENA SUERTE!', X + TW / 2, footerY, { align: 'center' })
 
         idx++
       }
 
-      doc.save('solibingo_cartones.pdf')
+      doc.save('bolillo_cartones.pdf')
     } catch (err) {
       alert('Error al generar el PDF: ' + err.message)
     } finally {
@@ -216,7 +243,7 @@ export default function PrintApp() {
             </label>
             {tickets.length > 0 && (
               <button onClick={handleGeneratePDF} disabled={isGenerating}
-                className="flex items-center gap-2 px-6 py-4 bg-[#26105F] text-white rounded-xl cursor-pointer hover:bg-[#1a0a45] transition-colors shadow-md font-bold disabled:opacity-50">
+                className="flex items-center gap-2 px-6 py-4 bg-[#8B1A1A] text-white rounded-xl cursor-pointer hover:bg-[#520f0f] transition-colors shadow-md font-bold disabled:opacity-50">
                 <Download className="w-5 h-5" />
                 {isGenerating ? 'Generando PDF...' : 'Descargar en PDF'}
               </button>
@@ -227,7 +254,7 @@ export default function PrintApp() {
 
       {(isLoading || isGenerating) && (
         <div className="p-12 flex flex-col items-center">
-          <div className="w-12 h-12 border-4 border-[#8B5CF6] border-t-transparent rounded-full animate-spin mb-4" />
+          <div className="w-12 h-12 border-4 border-[#8B1A1A] border-t-transparent rounded-full animate-spin mb-4" />
           <p className="text-slate-500 font-bold">
             {isGenerating ? `Procesando ${tickets.length} cartones...` : 'Cargando...'}
           </p>

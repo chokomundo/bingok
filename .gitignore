@@ -12,8 +12,17 @@ dist
 dist-ssr
 *.local
 
-# Browser session data
+# Browser session cache (datos sensibles de WhatsApp)
 server/sessions/
+server/.wwebjs_cache/
+
+# Scripts temporales
+fix_amber.py
+fix_remaining.py
+replace.py
+
+# Archivos locales de audio sueltos
+sonido numeros cantadaos/
 
 # Editor directories and files
 .vscode/*

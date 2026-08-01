@@ -63,16 +63,13 @@ export default function Home() {
       description: "Gestiona el JSON de cartones, monitorea las descargas y controla la distribución en tiempo real.",
       icon: <BarChart3 className="w-10 h-10 text-white" />,
       href: "#/ventas",
-      color: "from-purple-500 to-indigo-600",
-      shadow: "hover:shadow-[0_10px_40px_rgba(139,92,246,0.2)]",
+      color: "from-[#8B1A1A] to-[#6b1414]",
+      shadow: "hover:shadow-[0_10px_40px_rgba(139,26,26,0.2)]",
     }
   ]
 
   return (
     <div className="min-h-screen bg-background text-text flex items-center justify-center p-4 relative">
-      <a href="#/" className="absolute top-4 left-4 text-xs font-bold text-text-muted hover:text-white flex items-center gap-1 transition-colors">
-        ← Página pública
-      </a>
       <div className="max-w-6xl w-full">
         {/* Header */}
         <div className="text-center mb-16 space-y-6">
@@ -83,7 +80,7 @@ export default function Home() {
              </span>
           </div>
           <h1 className="text-6xl md:text-8xl font-black tracking-tight flex items-center justify-center gap-4">
-            BINGO <span className="bg-gradient-to-br from-primary to-accent bg-clip-text text-transparent">LIVE</span>
+            BOLILLO <span className="bg-gradient-to-br from-primary to-accent bg-clip-text text-transparent">SUERTE</span>
           </h1>
           <p className="text-text-muted text-lg md:text-2xl max-w-2xl mx-auto font-medium">
             El sistema modular definitivo para tu evento en vivo. Selecciona la herramienta que necesitas hoy.
@@ -112,9 +109,9 @@ export default function Home() {
         </div>
 
         {/* Super Admin WhatsApp Bot Settings */}
-        <div className="mt-16 bg-[#0e0524]/60 backdrop-blur-xl border border-[#221443] rounded-3xl p-8 shadow-[0_20px_50px_rgba(0,0,0,0.3)]">
+        <div className="mt-16 bg-[#1a0e0e]/60 backdrop-blur-xl border border-[#3d1f1f] rounded-3xl p-8 shadow-[0_20px_50px_rgba(0,0,0,0.3)]">
           <div className="flex items-center gap-3 mb-6">
-             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg">
+             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#8B1A1A] to-[#6b1414] flex items-center justify-center shadow-lg">
                 <ShieldAlert className="w-5 h-5 text-white" />
              </div>
              <div>
@@ -128,11 +125,11 @@ export default function Home() {
                 value={superAdminInput}
                 onChange={(e) => setSuperAdminInput(e.target.value)}
                 placeholder="Ej. 59178240880, 59170000000"
-                className="flex-1 h-12 bg-[#180c35]/50 border border-[#221443] rounded-xl px-4 text-sm text-white placeholder:text-[#7c7297]/30 focus:outline-none focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500/50 transition-all"
+                className="flex-1 h-12 bg-[#2d1515]/50 border border-[#3d1f1f] rounded-xl px-4 text-sm text-white placeholder:text-[#8a7262]/30 focus:outline-none focus:ring-2 focus:ring-[#8B1A1A]/30 focus:border-[#8B1A1A]/50 transition-all"
              />
              <button
                 onClick={handleSaveSuperAdmins}
-                className="h-12 px-6 bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-400 hover:to-indigo-500 text-white font-black text-xs uppercase tracking-widest rounded-xl shadow-lg shadow-purple-500/15 hover:shadow-purple-500/30 hover:scale-[1.01] active:scale-[0.99] transition-all cursor-pointer flex items-center justify-center gap-2"
+                className="h-12 px-6 bg-gradient-to-r from-[#8B1A1A] to-[#6b1414] hover:from-[#a52020] hover:to-[#8B1A1A] text-white font-black text-xs uppercase tracking-widest rounded-xl shadow-lg shadow-[#8B1A1A]/15 hover:shadow-[#8B1A1A]/30 hover:scale-[1.01] active:scale-[0.99] transition-all cursor-pointer flex items-center justify-center gap-2"
              >
                 Guardar Súper Admins
              </button>

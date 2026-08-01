@@ -17,7 +17,7 @@ function AdminLogin({ onLogin }) {
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    if (password === '78240880p') {
+    if (password === 'bolillo26') {
       onLogin()
     } else {
       setError(true)
@@ -26,28 +26,28 @@ function AdminLogin({ onLogin }) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0b031e] via-[#080214] to-[#120530] text-white flex items-center justify-center p-4 relative overflow-hidden font-sans">
+    <div className="min-h-screen bg-gradient-to-br from-[#0f0a0a] via-[#0d0808] to-[#1a0e0e] text-white flex items-center justify-center p-4 relative overflow-hidden font-sans">
       {/* Ambient background glows */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute -top-40 -left-40 w-[600px] h-[600px] bg-purple-600/10 rounded-full blur-[140px]" />
-        <div className="absolute -bottom-40 -right-40 w-[600px] h-[600px] bg-amber-500/5 rounded-full blur-[140px]" />
+        <div className="absolute -top-40 -left-40 w-[600px] h-[600px] bg-[#8B1A1A]/10 rounded-full blur-[140px]" />
+        <div className="absolute -bottom-40 -right-40 w-[600px] h-[600px] bg-[#C5A052]/5 rounded-full blur-[140px]" />
       </div>
 
       <div className="relative z-10 max-w-md w-full">
         {/* Logo / Header */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-600 to-indigo-600 shadow-lg shadow-purple-600/20 mb-4 border border-purple-500/20">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-[#8B1A1A] to-[#6b1414] shadow-lg shadow-[#8B1A1A]/20 mb-4 border border-[#8B1A1A]/20">
             <Lock className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-4xl font-serif font-black tracking-widest text-[#efeaf6] mb-2 uppercase">BINGO BLACK</h1>
-          <p className="text-[#7c7297] text-sm uppercase tracking-widest font-black">Suite de Operación</p>
+          <h1 className="text-4xl font-serif font-black tracking-widest text-[#fdf4e7] mb-2 uppercase">BOLILLO DE LA SUERTE</h1>
+          <p className="text-[#8a7262] text-sm uppercase tracking-widest font-black">Suite de Operación</p>
         </div>
 
         {/* Login Card */}
-        <div className="bg-[#0e0524]/60 backdrop-blur-xl border border-[#221443] rounded-3xl p-6 md:p-8 shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
+        <div className="bg-[#1a0e0e]/60 backdrop-blur-xl border border-[#3d1f1f] rounded-3xl p-6 md:p-8 shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <label className="block text-xs font-black uppercase tracking-wider text-[#a78bfa] mb-2.5">
+              <label className="block text-xs font-black uppercase tracking-wider text-[#C5A052] mb-2.5">
                 Contraseña de Administrador
               </label>
               
@@ -60,13 +60,13 @@ function AdminLogin({ onLogin }) {
                     if (error) setError(false)
                   }}
                   placeholder="••••••••••••"
-                  className="w-full h-13 bg-[#180c35]/50 border border-[#221443] rounded-xl pl-4 pr-12 text-lg text-white placeholder:text-[#7c7297]/30 focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500/50 transition-all font-mono tracking-widest shadow-inner"
+                  className="w-full h-13 bg-[#2d1515]/50 border border-[#3d1f1f] rounded-xl pl-4 pr-12 text-lg text-white placeholder:text-[#8a7262]/30 focus:outline-none focus:ring-2 focus:ring-[#C5A052]/30 focus:border-[#C5A052]/50 transition-all font-mono tracking-widest shadow-inner"
                   autoFocus
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-[#7c7297] hover:text-white transition-colors"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-[#8a7262] hover:text-white transition-colors"
                 >
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
@@ -82,22 +82,11 @@ function AdminLogin({ onLogin }) {
 
             <button
               type="submit"
-              className="w-full h-12 bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-yellow-400 text-[#0f0729] font-black text-xs uppercase tracking-widest rounded-xl shadow-lg shadow-amber-500/15 hover:shadow-amber-500/30 hover:scale-[1.01] active:scale-[0.99] transition-all cursor-pointer flex items-center justify-center gap-2"
+              className="w-full h-12 bg-gradient-to-r from-[#C5A052] to-[#d4b366] hover:from-[#d4b366] hover:to-[#dcc07a] text-[#0f0a0a] font-black text-xs uppercase tracking-widest rounded-xl shadow-lg shadow-[#C5A052]/15 hover:shadow-[#C5A052]/30 hover:scale-[1.01] active:scale-[0.99] transition-all cursor-pointer flex items-center justify-center gap-2"
             >
               Acceder a la Suite
             </button>
           </form>
-        </div>
-
-        {/* Back Link */}
-        <div className="text-center mt-6">
-          <a
-            href="#/"
-            className="inline-flex items-center gap-2 text-xs font-black text-[#7c7297] hover:text-white uppercase tracking-wider transition-colors"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            Volver a la página pública
-          </a>
         </div>
       </div>
     </div>

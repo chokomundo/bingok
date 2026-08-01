@@ -1,5 +1,5 @@
 /* ── Solibingo vars ─────────────────────────────────── */
-:root { --navy:#1B2B5E;--pink:#E8325A;--teal:#2BB5A0;--gold:#F5C842;--cream:#FDF4E7; }
+:root { --navy:#0f0a0a;--pink:#8B1A1A;--teal:#a8863e;--gold:#C5A052;--cream:#FDF4E7; }
 *{box-sizing:border-box;margin:0;padding:0;}
 /* Restore scroll */
 body{overflow-y:auto;overflow-x:hidden;}

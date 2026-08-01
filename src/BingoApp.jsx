@@ -17,6 +17,7 @@ import {
 
 import bingoBlackBg from './assets/bingo_black_bg.jpg'
 import bingoBlackBgVertical from './assets/bingo_black_bg_vertical.jpg'
+import bolilloLogo from './assets/bolillo_logo.jpg'
 
 // --- BINGO BOARD HELPERS ---
 const BINGO_LETTERS = ['B', 'I', 'N', 'G', 'O']
@@ -64,19 +65,22 @@ function formatBingoNumber(num) {
 
 // --- AVAILABLE PATTERNS ---
 const AVAILABLE_PATTERNS = [
-  { id: 1, name: 'Letra X', rule: 'STATIC', pattern: [[1,0,0,0,1], [0,1,0,1,0], [0,0,1,0,0], [0,1,0,1,0], [1,0,0,0,1]] },
-  { id: 2, name: 'Cruz', rule: 'STATIC', pattern: [[0,0,1,0,0], [0,0,1,0,0], [1,1,1,1,1], [0,0,1,0,0], [0,0,1,0,0]] },
-  { id: 3, name: 'Línea Horizontal', rule: 'ANY_HORIZONTAL', pattern: [[0,0,0,0,0], [0,0,0,0,0], [1,1,1,1,1], [0,0,0,0,0], [0,0,0,0,0]] },
-  { id: 4, name: 'Línea Vertical', rule: 'ANY_VERTICAL', pattern: [[0,0,1,0,0], [0,0,1,0,0], [0,0,1,0,0], [0,0,1,0,0], [0,0,1,0,0]] },
-  { id: 5, name: 'Diagonal', rule: 'ANY_DIAGONAL', pattern: [[1,0,0,0,0], [0,1,0,0,0], [0,0,1,0,0], [0,0,0,1,0], [0,0,0,0,1]] },
+  { id: 1, name: 'Letra X', rule: 'STATIC', pattern: [[1,0,0,0,1], [0,1,0,1,0], [0,0,0,0,0], [0,1,0,1,0], [1,0,0,0,1]] },
+  { id: 2, name: 'Cruz', rule: 'STATIC', pattern: [[0,0,1,0,0], [1,1,1,1,1], [0,0,0,0,0], [0,0,1,0,0], [0,0,1,0,0]] },
+  { id: 3, name: 'Línea Horizontal', rule: 'ANY_HORIZONTAL', pattern: [[0,0,0,0,0], [0,0,0,0,0], [1,1,0,1,1], [0,0,0,0,0], [0,0,0,0,0]] },
+  { id: 4, name: 'Línea Vertical', rule: 'ANY_VERTICAL', pattern: [[0,0,1,0,0], [0,0,1,0,0], [0,0,0,0,0], [0,0,1,0,0], [0,0,1,0,0]] },
+  { id: 5, name: 'Diagonal', rule: 'ANY_DIAGONAL', pattern: [[1,0,0,0,0], [0,1,0,0,0], [0,0,0,0,0], [0,0,0,1,0], [0,0,0,0,1]] },
   { id: 6, name: 'Doble Línea Horizontal', rule: 'DOUBLE_HORIZONTAL', pattern: [[1,1,1,1,1], [0,0,0,0,0], [0,0,0,0,0], [0,0,0,0,0], [1,1,1,1,1]] },
   { id: 7, name: 'Doble Línea Vertical', rule: 'DOUBLE_VERTICAL', pattern: [[1,0,0,0,1], [1,0,0,0,1], [1,0,0,0,1], [1,0,0,0,1], [1,0,0,0,1]] },
   { id: 8, name: 'Corona', rule: 'STATIC', pattern: [[1,1,1,1,1], [1,0,0,0,1], [1,0,0,0,1], [1,0,0,0,1], [1,1,1,1,1]] },
   { id: 9, name: 'Cuatro Esquinas', rule: 'STATIC', pattern: [[1,0,0,0,1], [0,0,0,0,0], [0,0,0,0,0], [0,0,0,0,0], [1,0,0,0,1]] },
   { id: 10, name: '4 Brackets', rule: 'FOUR_BRACKETS', pattern: [[1,1,0,0,0], [1,1,0,0,0], [0,0,0,0,0], [0,0,0,0,0], [0,0,0,0,0]] },
-  { id: 11, name: 'Bingo Loco', rule: 'BINGO_LOCO', pattern: [[1,0,1,0,0], [0,1,0,0,1], [1,0,0,1,0], [0,0,1,0,1], [0,1,0,1,0]] },
-  { id: 12, name: '1er Cartón Lleno', rule: 'STATIC', pattern: [[1,1,1,1,1], [1,1,1,1,1], [1,1,1,1,1], [1,1,1,1,1], [1,1,1,1,1]] },
-  { id: 13, name: '2do Cartón Lleno', rule: 'STATIC', pattern: [[1,1,1,1,1], [1,1,1,1,1], [1,1,1,1,1], [1,1,1,1,1], [1,1,1,1,1]] },
+  { id: 11, name: 'Bingo Loco', rule: 'BINGO_LOCO', pattern: [[1,0,1,0,0], [0,1,0,0,1], [1,0,0,1,0], [0,0,0,0,1], [0,1,0,1,0]] },
+  { id: 12, name: '1er Cartón Lleno', rule: 'STATIC', pattern: [[1,1,1,1,1], [1,1,1,1,1], [1,1,0,1,1], [1,1,1,1,1], [1,1,1,1,1]] },
+  { id: 13, name: '2do Cartón Lleno', rule: 'STATIC', pattern: [[1,1,1,1,1], [1,1,1,1,1], [1,1,0,1,1], [1,1,1,1,1], [1,1,1,1,1]] },
+  { id: 14, name: 'Doble L', rule: 'STATIC', pattern: [[0,0,0,0,0], [1,0,0,1,0], [1,0,0,1,0], [1,1,0,1,1], [0,0,0,0,0]] },
+  { id: 15, name: 'Círculo', rule: 'STATIC', pattern: [[0,1,0,1,0], [1,0,0,0,1], [0,0,0,0,0], [1,0,0,0,1], [0,1,0,1,0]] },
+  { id: 16, name: 'Figura', rule: 'STATIC', pattern: [[1,1,1,1,1], [1,1,1,1,1], [1,1,0,1,1], [1,0,0,0,0], [1,0,0,0,0]] },
 ]
 
 const playSpinSound = () => {
@@ -144,6 +148,26 @@ const playRevealSound = () => {
   }
 };
 
+const voiceAudio = typeof window !== 'undefined' ? new Audio() : null;
+
+const playNumberVoice = (num) => {
+  if (!num || !voiceAudio) return
+  try {
+    voiceAudio.pause()
+    voiceAudio.src = `/audio/numeros/${num}.mp3`
+    voiceAudio.currentTime = 0
+    voiceAudio.volume = 1.0
+    const promise = voiceAudio.play()
+    if (promise !== undefined) {
+      promise.catch(err => {
+        console.warn('Audio de voz bloqueado por navegador:', err)
+      })
+    }
+  } catch (e) {
+    console.error('Error al reproducir voz de número:', e)
+  }
+};
+
 function evaluateTicket(matrix, prize, calledFlags) {
   const rule = prize.rule;
   const pattern = prize.pattern;
@@ -153,6 +177,7 @@ function evaluateTicket(matrix, prize, calledFlags) {
     const missingNumbers = [];
     for (let r = 0; r < 5; r++) {
       for (let c = 0; c < 5; c++) {
+        if (r === 2 && c === 2) continue; // Skip center cell
         if (pattern[r][c] === 1) {
           const val = matrix[r][c];
           if (!calledFlags[val]) {
@@ -251,6 +276,7 @@ function evaluateTicket(matrix, prize, calledFlags) {
     let d1Count = 0;
     const d1Nums = [];
     for (let i = 0; i < 5; i++) {
+      if (i === 2) continue; // Skip center cell
       const val = matrix[i][i];
       if (!calledFlags[val]) {
         d1Count++;
@@ -261,6 +287,7 @@ function evaluateTicket(matrix, prize, calledFlags) {
     let d2Count = 0;
     const d2Nums = [];
     for (let i = 0; i < 5; i++) {
+      if (i === 2) continue; // Skip center cell
       const val = matrix[i][4 - i];
       if (!calledFlags[val]) {
         d2Count++;
@@ -280,6 +307,7 @@ function evaluateTicket(matrix, prize, calledFlags) {
     const unmarkedNums = [];
     for (let r = 0; r < 5; r++) {
       for (let c = 0; c < 5; c++) {
+        if (r === 2 && c === 2) continue; // Skip center cell
         const val = matrix[r][c];
         if (calledFlags[val]) {
           markedCount++;
@@ -408,6 +436,8 @@ export default function BingoApp() {
     setLastCalledAnim(num)
     setInputNumber('')
 
+    playNumberVoice(num)
+
     // Clear animation after a moment
     setTimeout(() => setLastCalledAnim(null), 700)
   }, [calledNumbers])
@@ -415,23 +445,43 @@ export default function BingoApp() {
   const drawRandomBall = useCallback(() => {
     if (availableNumbers.length === 0 || gameState === 'VERIFICANDO' || isSpinning) return
     setIsSpinning(true)
-    playSpinSound()
+    try { playSpinSound() } catch (e) {}
+
+    // Prime the voice audio on user click gesture so browser unlocks autoplay
+    if (voiceAudio) {
+      voiceAudio.load()
+    }
+
     const allNums = Array.from({ length: 75 }, (_, i) => i + 1)
     let tick = 0
     spinIntervalRef.current = setInterval(() => {
       setSpinDisplay(allNums[Math.floor(Math.random() * allNums.length)])
       tick++
     }, 80)
+
+    let pickedNum = null
     setTimeout(() => {
-      clearInterval(spinIntervalRef.current)
-      const idx = Math.floor(Math.random() * availableNumbers.length)
-      const picked = availableNumbers[idx]
-      setAvailableNumbers(prev => prev.filter(n => n !== picked))
-      setSpinDisplay(null)
-      callNumber(picked)
-      playRevealSound()
-      setIsSpinning(false)
-    }, 2000)
+      try {
+        clearInterval(spinIntervalRef.current)
+        if (availableNumbers.length > 0) {
+          const idx = Math.floor(Math.random() * availableNumbers.length)
+          pickedNum = availableNumbers[idx]
+          setAvailableNumbers(prev => prev.filter(n => n !== pickedNum))
+          setSpinDisplay(null)
+          callNumber(pickedNum)
+        }
+      } catch (err) {
+        console.error('Error drawing ball:', err)
+      } finally {
+        setIsSpinning(false)
+        try { playRevealSound() } catch (e) {}
+        if (pickedNum) {
+          setTimeout(() => {
+            playNumberVoice(pickedNum)
+          }, 150)
+        }
+      }
+    }, 1800)
   }, [availableNumbers, gameState, isSpinning, callNumber])
 
   const handleFileUpload = (e) => {
@@ -458,12 +508,12 @@ export default function BingoApp() {
     setSelectedPatternIds(prev => 
       prev.includes(id) 
         ? prev.filter(p => p !== id) 
-        : (prev.length < 4 ? [...prev, id] : prev)
+        : [...prev, id]
     )
   }
 
   const startGame = () => {
-    if (ticketsData.length === 0 || selectedPatternIds.length !== 4) return
+    if (ticketsData.length === 0 || selectedPatternIds.length === 0) return
     
     const newPrizes = selectedPatternIds.map((id, index) => {
       const pat = AVAILABLE_PATTERNS.find(p => p.id === id)
@@ -478,9 +528,60 @@ export default function BingoApp() {
   const [verificationResult, setVerificationResult] = useState(null)
   const [matchedTicketDetails, setMatchedTicketDetails] = useState(null)
 
-  const [lastCalledAnim, setLastCalledAnim] = useState(null)
   const [showVerifyModal, setShowVerifyModal] = useState(false)
   const inputRef = useRef(null)
+
+  // --- SORTEO / RIFA DE CARTONES STATE ---
+  const [showRaffleModal, setShowRaffleModal] = useState(false)
+  const [raffleCount, setRaffleCount] = useState(1)
+  const [raffleWinners, setRaffleWinners] = useState([])
+  const [isRaffleSpinning, setIsRaffleSpinning] = useState(false)
+  const [raffleTempNum, setRaffleTempNum] = useState(null)
+
+  // Draw 1 winner ticket per click (por turno)
+  const handleDrawOneRaffleWinner = () => {
+    if (isRaffleSpinning) return
+
+    setIsRaffleSpinning(true)
+    try { playSpinSound() } catch (e) {}
+
+    let counter = 0
+    const interval = setInterval(() => {
+      const randomTicketNum = Math.floor(Math.random() * 1000) + 1
+      setRaffleTempNum(randomTicketNum)
+      counter++
+      if (counter >= 18) {
+        clearInterval(interval)
+        
+        try {
+          const totalTicketsCount = (ticketsData && ticketsData.length > 0) ? ticketsData.length : 1000
+          let newWinnerNum = String(Math.floor(Math.random() * totalTicketsCount) + 1).padStart(6, '0')
+          
+          setRaffleWinners(prev => {
+            if (prev.includes(newWinnerNum) && prev.length < totalTicketsCount) {
+              let alt = Math.floor(Math.random() * totalTicketsCount) + 1
+              while (prev.includes(String(alt).padStart(6, '0'))) {
+                alt = (alt % totalTicketsCount) + 1
+              }
+              newWinnerNum = String(alt).padStart(6, '0')
+            }
+            return [...prev, newWinnerNum]
+          })
+        } catch (err) {
+          console.error('Raffle error:', err)
+        } finally {
+          setIsRaffleSpinning(false)
+          try { playRevealSound() } catch (e) {}
+        }
+      }
+    }, 80)
+  }
+
+  const handleResetRaffle = () => {
+    setRaffleWinners([])
+    setIsRaffleSpinning(false)
+    setRaffleTempNum(null)
+  }
 
   const [searchQuery, setSearchQuery] = useState('')
 
@@ -1002,17 +1103,16 @@ export default function BingoApp() {
                     })}
                     
                     {/* Center logo sphere */}
-                    <div className="relative w-16 h-16 rounded-full bg-gradient-to-br from-yellow-400 via-amber-500 to-amber-700 shadow-[0_0_30px_rgba(234,179,8,0.6)] border-2 border-yellow-300/40 flex items-center justify-center z-10">
-                      <div className="absolute inset-[2px] rounded-full border border-white/20 bg-[radial-gradient(circle_at_30%_30%,transparent_0%,rgba(0,0,0,0.3)_100%)]" />
-                      <Star className="w-7 h-7 text-black/80 z-10 drop-shadow" />
+                    <div className="relative w-16 h-16 rounded-full bg-gradient-to-br from-[#C5A052] via-[#a8863e] to-[#8B1A1A] shadow-[0_0_30px_rgba(197,160,82,0.6)] border-2 border-[#C5A052] flex items-center justify-center z-10 p-0.5 overflow-hidden">
+                      <img src={bolilloLogo} alt="Bolillo Logo" className="w-full h-full object-cover rounded-full z-10" style={{ clipPath: 'circle(48% at 50% 50%)' }} />
                     </div>
                   </div>
 
                   {/* Title text */}
                   <div className="text-center">
-                    <h3 className="text-2xl font-black tracking-tight leading-none">
-                      <span className="bg-gradient-to-r from-yellow-400 via-amber-400 to-orange-500 bg-clip-text text-transparent">BINGO</span>{' '}
-                      <span className="text-white">LOCO</span>
+                    <h3 className="text-2xl font-black tracking-tight leading-none font-serif">
+                      <span className="bg-gradient-to-r from-[#C5A052] via-[#d4b366] to-[#C5A052] bg-clip-text text-transparent">BINGO</span>{' '}
+                      <span className="text-white">EL BOLILLO</span>
                     </h3>
                     <p className="text-[10px] text-text-muted font-bold uppercase tracking-[0.25em] mt-1">Sistema de Cartones Activo</p>
                   </div>
@@ -1038,8 +1138,8 @@ export default function BingoApp() {
           {/* Section B: Patterns */}
           <div className="mb-8">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-sm font-bold uppercase tracking-widest text-text-muted">2. Seleccionar 4 Jugadas</h2>
-              <span className="text-xs font-bold bg-primary/20 text-primary px-3 py-1 rounded-full">{selectedPatternIds.length} / 4</span>
+              <h2 className="text-sm font-bold uppercase tracking-widest text-text-muted">2. Seleccionar Jugadas</h2>
+              <span className="text-xs font-bold bg-primary/20 text-primary px-3 py-1 rounded-full">{selectedPatternIds.length} seleccionada(s)</span>
             </div>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
               {AVAILABLE_PATTERNS.map(pat => {
@@ -1082,13 +1182,15 @@ export default function BingoApp() {
                           } else if (pat.rule === 'BINGO_LOCO') {
                             // Animated scattered pattern: random-looking cells that shift each tick
                             const locoPatterns = [
-                              [[1,0,1,0,0],[0,1,0,0,1],[1,0,0,1,0],[0,0,1,0,1],[0,1,0,1,0]],
-                              [[0,1,0,1,0],[1,0,0,1,0],[0,0,1,0,1],[1,0,0,0,1],[0,1,1,0,0]],
-                              [[0,0,1,0,1],[0,1,0,1,0],[1,0,1,0,0],[0,1,0,0,1],[1,0,0,1,0]],
-                              [[1,0,0,1,0],[0,0,1,0,1],[0,1,0,1,0],[1,0,1,0,0],[0,1,0,0,1]],
+                              [[1,0,1,0,0],[0,1,0,0,1],[1,0,0,1,0],[0,0,0,0,1],[0,1,0,1,0]],
+                              [[0,1,0,1,0],[1,0,0,1,0],[0,0,0,0,1],[1,0,0,0,1],[0,1,1,0,0]],
+                              [[0,0,1,0,1],[0,1,0,1,0],[1,0,0,0,0],[0,1,0,0,1],[1,0,0,1,0]],
+                              [[1,0,0,1,0],[0,0,1,0,1],[0,1,0,1,0],[1,0,0,0,0],[0,1,0,0,1]],
                             ];
                             isPattern = locoPatterns[animationTick % 4][rIdx][cIdx] === 1;
                           }
+
+                          if (rIdx === 2 && cIdx === 2) isPattern = false;
 
                           return (
                             <div 
@@ -1114,7 +1216,7 @@ export default function BingoApp() {
           {/* Section D: Start Button */}
           <button
             onClick={startGame}
-            disabled={ticketsData.length === 0 || selectedPatternIds.length !== 4}
+            disabled={ticketsData.length === 0 || selectedPatternIds.length === 0}
             className="w-full h-14 bg-gradient-to-r from-primary to-amber-500 text-white font-black text-lg rounded-xl shadow-lg hover:shadow-primary/50 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-30 disabled:hover:scale-100 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center gap-2"
           >
             INICIAR BINGO
@@ -1138,16 +1240,16 @@ export default function BingoApp() {
       {/* Top bar */}
       <header className="flex flex-col sm:flex-row items-center justify-between mb-3 shrink-0 ml-12 md:ml-20 gap-3 sm:gap-0">
         <div className="flex items-center gap-3">
-          <div className="relative w-10 h-10 md:w-12 md:h-12 bg-gradient-to-br from-yellow-400 via-amber-500 to-amber-700 rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(234,179,8,0.5)] border border-yellow-300/30 shrink-0">
+          <div className="relative w-10 h-10 md:w-12 md:h-12 bg-gradient-to-br from-[#C5A052] via-[#a8863e] to-[#8B1A1A] rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(197,160,82,0.5)] border border-[#C5A052]/30 shrink-0">
             <div className="absolute inset-[3px] rounded-full border border-white/20 bg-[radial-gradient(circle_at_30%_30%,transparent_0%,rgba(0,0,0,0.4)_100%)]" />
             <Sparkles className="w-5 h-5 md:w-6 md:h-6 text-black z-10 drop-shadow animate-pulse" />
           </div>
           <div>
             <h1 className="text-xl md:text-3xl font-black tracking-tight leading-none text-center sm:text-left">
-              <span className="bg-gradient-to-r from-yellow-400 via-amber-400 to-orange-500 bg-clip-text text-transparent">BINGO</span>{' '}
-               <span className="text-white">EN VIVO</span>
+              <span className="bg-gradient-to-r from-[#C5A052] via-[#d4b366] to-[#8B1A1A] bg-clip-text text-transparent">BOLILLO</span>{' '}
+               <span className="text-white">DE LA SUERTE</span>
             </h1>
-            <p className="text-[9px] md:text-[10px] text-[#7c7297] tracking-widest uppercase mt-1 font-bold text-center sm:text-left">Tablero maestro</p>
+            <p className="text-[9px] md:text-[10px] text-[#8a7262] tracking-widest uppercase mt-1 font-bold text-center sm:text-left">Tablero maestro</p>
           </div>
         </div>
         
@@ -1168,7 +1270,7 @@ export default function BingoApp() {
         <div className="min-h-0 flex flex-col gap-3 order-2 lg:order-1">
 
           {/* Último número — badge grande encima de la pizarra */}
-          <div className="shrink-0 bg-[#0e0524] rounded-2xl border border-[#221443] p-3 md:p-4 flex items-center gap-4 relative overflow-hidden">
+          <div className="shrink-0 bg-[#1a0e0e] rounded-2xl border border-[#3d1f1f] p-3 md:p-4 flex items-center gap-4 relative overflow-hidden">
             {currentNumber ? (
               <>
                 <div className={`shrink-0 w-14 h-14 md:w-16 md:h-16 rounded-full flex flex-col items-center justify-center border border-white/20 ${LETTER_BALL_GRADIENT[getLetterForNumber(currentNumber)]}`}>
@@ -1176,47 +1278,38 @@ export default function BingoApp() {
                   <span className="text-2xl md:text-3xl font-black text-white leading-none">{currentNumber}</span>
                 </div>
                 <div>
-                  <p className="text-[9px] md:text-[10px] font-black uppercase tracking-[.15em] text-[#7c7297]">Última bola</p>
+                  <p className="text-[9px] md:text-[10px] font-black uppercase tracking-[.15em] text-[#8a7262]">Última bola</p>
                   <p className="text-xl md:text-2xl font-black text-white leading-tight mt-0.5">{formatBingoNumber(currentNumber)}</p>
-                  <p className="text-[9px] md:text-[10px] text-[#7c7297] mt-0.5 font-semibold">{availableNumbers.length} restantes de 75</p>
+                  <p className="text-[9px] md:text-[10px] text-[#8a7262] mt-0.5 font-semibold">{availableNumbers.length} restantes de 75</p>
                 </div>
               </>
             ) : (
               <div className="w-full flex items-center gap-3 py-1">
-                <div className="w-14 h-14 md:w-16 md:h-16 rounded-full bg-surface-light border-2 border-dashed border-[#221443] flex items-center justify-center shrink-0">
-                  <span className="text-xl text-[#7c7297]/40">?</span>
+                <div className="w-14 h-14 md:w-16 md:h-16 rounded-full bg-[#2d1515] border-2 border-dashed border-[#3d1f1f] flex items-center justify-center shrink-0">
+                  <span className="text-xl text-[#8a7262]/40">?</span>
                 </div>
                 <div>
-                  <p className="text-[9px] md:text-[10px] font-black uppercase tracking-[.15em] text-[#7c7297]">Esperando inicio</p>
-                  <p className="text-xs md:text-sm font-bold text-[#7c7297]/60 mt-0.5">Extrae la primera bola</p>
+                  <p className="text-[9px] md:text-[10px] font-black uppercase tracking-[.15em] text-[#8a7262]">Esperando inicio</p>
+                  <p className="text-xs md:text-sm font-bold text-[#8a7262]/60 mt-0.5">Extrae la primera bola</p>
                 </div>
               </div>
             )}
           </div>
 
           {/* Pizarra de números */}
-          <div className="flex-1 min-h-0 bg-[#0e0524] rounded-2xl border border-[#221443] p-3 md:p-4 flex flex-col">
+          <div className="flex-1 min-h-0 bg-[#1a0e0e] rounded-2xl border border-[#3d1f1f] p-3 md:p-4 flex flex-col">
             {/* Título */}
             <div className="flex items-center justify-between mb-3 px-1 shrink-0">
-              <span className="text-[10px] font-black uppercase tracking-[.25em] text-[#7c7297]">Pizarra</span>
-              <span className="text-xs font-bold text-yellow-400">{totalCalled} / 75</span>
+              <span className="text-[10px] font-black uppercase tracking-[.25em] text-[#8a7262]">Pizarra</span>
+              <span className="text-xs font-bold text-[#C5A052]">{totalCalled} / 75</span>
             </div>
             {/* Grid */}
             <div className="flex-1 grid grid-cols-5 grid-rows-[auto_repeat(15,1fr)] gap-1 md:gap-[5px] min-h-0">
-              {BINGO_LETTERS.map((letter) => {
-                const colors = {
-                  B: 'bg-rose-600 text-white shadow-[0_0_8px_rgba(244,63,94,0.3)]',
-                  I: 'bg-indigo-600 text-white shadow-[0_0_8px_rgba(99,102,241,0.3)]',
-                  N: 'bg-purple-600 text-white shadow-[0_0_8px_rgba(16,185,129,0.3)]',
-                  G: 'bg-emerald-600 text-white shadow-[0_0_8px_rgba(16,185,129,0.3)]',
-                  O: 'bg-orange-600 text-white shadow-[0_0_8px_rgba(249,115,22,0.3)]',
-                }
-                return (
-                  <div key={`header-${letter}`} className={`flex items-center justify-center rounded-md md:rounded-lg font-black text-xs md:text-sm lg:text-xs xl:text-sm py-1 lg:py-0.5 ${colors[letter]}`}>
-                    {letter}
-                  </div>
-                )
-              })}
+              {BINGO_LETTERS.map((letter) => (
+                <div key={`header-${letter}`} className="flex items-center justify-center rounded-md md:rounded-lg font-black text-xs md:text-sm py-1 lg:py-0.5 bg-gradient-to-b from-[#8B1A1A] to-[#5e1111] text-[#E2C070] border border-[#C5A052]/40 shadow-sm font-serif">
+                  {letter}
+                </div>
+              ))}
               {Array.from({ length: 15 }, (_, rowIdx) =>
                 BINGO_LETTERS.map((letter) => {
                   const [start] = LETTER_RANGES[letter]
@@ -1226,18 +1319,11 @@ export default function BingoApp() {
                   
                   let cellClasses = "flex items-center justify-center rounded-md md:rounded-lg font-black text-xs lg:text-[11px] xl:text-xs h-6 lg:h-full transition-all duration-300 select-none "
                   if (isLatest) {
-                    cellClasses += `bg-gradient-to-br ${LETTER_COLORS[letter]} text-white ring-2 ring-white ring-offset-1 ring-offset-[#0e0524] scale-105 shadow-lg z-10`
+                    cellClasses += "bg-gradient-to-br from-[#C5A052] via-[#d4b366] to-[#8B1A1A] text-white ring-2 ring-white ring-offset-1 ring-offset-[#1a0e0e] scale-105 shadow-xl z-10 animate-pulse"
                   } else if (isCalled) {
-                    const calledBg = {
-                      B: 'bg-rose-600 text-white shadow-[0_0_8px_rgba(244,63,94,0.4)]',
-                      I: 'bg-indigo-600 text-white shadow-[0_0_8px_rgba(99,102,241,0.4)]',
-                      N: 'bg-purple-600 text-white shadow-[0_0_8px_rgba(168,85,247,0.4)]',
-                      G: 'bg-emerald-600 text-white shadow-[0_0_8px_rgba(16,185,129,0.4)]',
-                      O: 'bg-orange-600 text-white shadow-[0_0_8px_rgba(249,115,22,0.4)]',
-                    }
-                    cellClasses += calledBg[letter]
+                    cellClasses += "bg-[#8B1A1A] text-white border border-[#C5A052]/60 shadow-[0_0_8px_rgba(197,160,82,0.3)]"
                   } else {
-                    cellClasses += 'bg-[#0a041a]/60 border border-[#1b0d36] text-[#334155]/60'
+                    cellClasses += 'bg-[#0d0808]/70 border border-[#3d1f1f]/50 text-[#8a7262]/50'
                   }
 
                   return (
@@ -1258,78 +1344,77 @@ export default function BingoApp() {
           <div className="flex-1 min-h-0 flex flex-col gap-3">
             {/* Tómbola virtual */}
             <div 
-              className="flex-1 bg-[#0e0524] rounded-2xl border border-[#221443] flex flex-col items-center justify-center p-4 md:p-6 pt-8 md:pt-12 relative overflow-hidden"
-              style={{
-                backgroundImage: `linear-gradient(rgba(14, 5, 36, 0.65), rgba(14, 5, 36, 0.85)), url(${bingoBlackBg})`,
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-                backgroundRepeat: 'no-repeat'
-              }}
+              className="flex-1 bg-[#1a0e0e] rounded-2xl border border-[#3d1f1f] flex flex-col items-center justify-center p-4 md:p-6 pt-8 md:pt-12 relative overflow-hidden"
             >
+              {/* Background Watermark Logo */}
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-15">
+                <img src={bolilloLogo} alt="Bolillo Watermark" className="w-72 h-72 md:w-80 md:h-80 object-cover rounded-full shadow-2xl" style={{ clipPath: 'circle(48% at 50% 50%)' }} />
+              </div>
+              
               {/* Glow ambiental */}
               <div className="absolute inset-0 pointer-events-none">
                 <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full blur-3xl transition-all duration-700 ${
-                  isSpinning ? 'w-64 h-64 md:w-80 md:h-80 bg-yellow-500/20 scale-110' : 'w-40 h-40 md:w-48 md:h-48 bg-yellow-500/5'
+                  isSpinning ? 'w-64 h-64 md:w-80 md:h-80 bg-[#C5A052]/20 scale-110' : 'w-40 h-40 md:w-48 md:h-48 bg-[#C5A052]/5'
                 }`} />
               </div>
               
               {/* Contadores Centrados arriba del Título */}
               <div className="flex items-center gap-4 mb-4 z-10">
                 {/* Bolas cantadas */}
-                <div className="flex flex-col items-center bg-[#0a031a]/85 rounded-2xl px-4 py-2 border border-emerald-500/40 shadow-[0_0_12px_rgba(16,185,129,0.2)]">
+                <div className="flex flex-col items-center bg-[#0d0808]/90 rounded-2xl px-4 py-2 border border-emerald-500/40 shadow-[0_0_12px_rgba(16,185,129,0.2)]">
                   <span className="text-[7px] md:text-[8px] font-black uppercase tracking-wider text-emerald-400/80">Cantadas</span>
                   <span className="text-xl md:text-2xl font-black text-emerald-400 drop-shadow-[0_0_5px_rgba(16,185,129,0.5)] leading-none mt-0.5">{totalCalled}</span>
                 </div>
                 {/* Bolas restantes */}
-                <div className="flex flex-col items-center bg-[#0a031a]/85 rounded-2xl px-4 py-2 border border-amber-500/40 shadow-[0_0_12px_rgba(245,158,11,0.2)]">
-                  <span className="text-[7px] md:text-[8px] font-black uppercase tracking-wider text-amber-400/80">Restantes</span>
-                  <span className="text-xl md:text-2xl font-black text-amber-400 drop-shadow-[0_0_5px_rgba(245,158,11,0.5)] leading-none mt-0.5">{75 - totalCalled}</span>
+                <div className="flex flex-col items-center bg-[#0d0808]/90 rounded-2xl px-4 py-2 border border-[#C5A052]/40 shadow-[0_0_12px_rgba(197,160,82,0.2)]">
+                  <span className="text-[7px] md:text-[8px] font-black uppercase tracking-wider text-[#C5A052]">Restantes</span>
+                  <span className="text-xl md:text-2xl font-black text-[#C5A052] drop-shadow-[0_0_5px_rgba(197,160,82,0.5)] leading-none mt-0.5">{75 - totalCalled}</span>
                 </div>
               </div>
 
-              <p className="text-[10px] md:text-xs uppercase tracking-[0.3em] text-[#7c7297] mb-4 md:mb-5 z-10 font-black">✦ TÓMBOLA VIRTUAL ✦</p>
+              <p className="text-[10px] md:text-xs uppercase tracking-[0.3em] text-[#C5A052] mb-4 md:mb-5 z-10 font-black font-serif">✦ TÓMBOLA VIRTUAL ✦</p>
               
               {/* Sphere */}
               <div className={`relative rounded-full flex items-center justify-center mb-4 md:mb-5 z-10 transition-all duration-500 shrink-0 ${
                 isSpinning
-                  ? 'w-36 h-36 md:w-48 md:h-48 shadow-[0_0_60px_rgba(234,179,8,0.7)] border-4 border-yellow-400 scale-105'
-                  : 'w-32 h-32 md:w-44 md:h-44 shadow-[0_0_35px_rgba(234,179,8,0.25)] border-4 border-yellow-500/30'
-              } bg-[radial-gradient(circle_at_30%_30%,#2c2c2c_0%,#111111_70%,#000000_100%)]`}>
+                  ? 'w-36 h-36 md:w-48 md:h-48 shadow-[0_0_60px_rgba(197,160,82,0.7)] border-4 border-[#C5A052] scale-105'
+                  : 'w-32 h-32 md:w-44 md:h-44 shadow-[0_0_35px_rgba(197,160,82,0.25)] border-4 border-[#C5A052]/40'
+              } bg-[radial-gradient(circle_at_30%_30%,#2c1515_0%,#1a0e0e_70%,#0f0a0a_100%)]`}>
                 <div className="absolute top-3 left-6 md:top-4 md:left-8 w-10 md:w-14 h-5 md:h-7 bg-white/10 rounded-full blur-md" />
                 <div className="absolute top-1 left-3 md:top-2 md:left-4 w-5 md:w-7 h-5 md:h-7 bg-white/15 rounded-full blur-sm" />
                 
                 {isSpinning && spinDisplay !== null ? (
                   <div className="text-center select-none" key={spinDisplay}>
-                    <span className="block text-xs md:text-base font-black text-yellow-400 tracking-wider uppercase">{getLetterForNumber(spinDisplay)}</span>
-                    <span className="block text-5xl md:text-7xl font-black text-white leading-none" style={{ textShadow: '0 0 30px rgba(234,179,8,0.9)' }}>
+                    <span className="block text-xs md:text-base font-black text-[#C5A052] tracking-wider uppercase font-serif">{getLetterForNumber(spinDisplay)}</span>
+                    <span className="block text-5xl md:text-7xl font-black text-white leading-none" style={{ textShadow: '0 0 30px rgba(197,160,82,0.9)' }}>
                       {spinDisplay}
                     </span>
                   </div>
                 ) : currentNumber && !isSpinning ? (
                   <div className="text-center select-none">
-                    <span className="block text-xs md:text-base font-black text-yellow-400 tracking-wider uppercase">{getLetterForNumber(currentNumber)}</span>
-                    <span className="block text-5xl md:text-7xl font-black text-white leading-none" style={{ textShadow: '0 0 20px rgba(251,191,36,0.6)' }}>
+                    <span className="block text-xs md:text-base font-black text-[#C5A052] tracking-wider uppercase font-serif">{getLetterForNumber(currentNumber)}</span>
+                    <span className="block text-5xl md:text-7xl font-black text-white leading-none" style={{ textShadow: '0 0 20px rgba(197,160,82,0.6)' }}>
                       {currentNumber}
                     </span>
                   </div>
                 ) : (
-                  <div className="flex flex-col items-center gap-1.5 text-[#7c7297]/40">
-                    <Sparkles className="w-8 h-8 md:w-10 md:h-10 text-yellow-500/20" />
+                  <div className="flex flex-col items-center gap-1.5 text-[#8a7262]">
+                    <Sparkles className="w-8 h-8 md:w-10 md:h-10 text-[#C5A052]" />
                     <span className="text-[9px] md:text-xs font-black uppercase tracking-widest">Listo</span>
                   </div>
                 )}
               </div>
               
-              <p className="text-xs text-yellow-400 z-10 mb-4 md:mb-5 font-bold tracking-wider">
+              <p className="text-xs text-[#C5A052] z-10 mb-4 md:mb-5 font-bold tracking-wider">
                 <span className="font-black text-base md:text-lg mr-1">{availableNumbers.length}</span> bolas restantes
               </p>
               
               <button
                 onClick={drawRandomBall}
                 disabled={isSpinning || gameState === 'VERIFICANDO' || availableNumbers.length === 0}
-                className="z-10 h-11 md:h-12 px-6 md:px-10 bg-gradient-to-r from-yellow-400 via-amber-400 to-amber-500 hover:from-yellow-300 hover:to-amber-400 text-[#0f0729] font-black text-xs md:text-sm rounded-xl shadow-lg shadow-yellow-500/20 hover:shadow-yellow-500/40 hover:scale-[1.02] active:scale-95 transition-all duration-200 disabled:opacity-30 disabled:hover:scale-100 disabled:shadow-none cursor-pointer disabled:cursor-not-allowed flex items-center gap-2.5 tracking-wider font-sans"
+                className="z-10 h-12 md:h-13 px-8 md:px-12 bg-gradient-to-r from-[#C5A052] via-[#d4b366] to-[#C5A052] hover:from-[#d4b366] hover:to-[#e6cb85] text-[#1a0e0e] font-black text-sm md:text-base rounded-xl shadow-xl shadow-[#C5A052]/20 hover:shadow-[#C5A052]/40 hover:scale-[1.02] active:scale-95 transition-all duration-200 disabled:opacity-30 disabled:hover:scale-100 disabled:shadow-none cursor-pointer disabled:cursor-not-allowed flex items-center gap-2.5 tracking-wider font-sans border border-[#e6cb85]/40"
               >
-                <Play className={`w-3.5 md:w-4 h-3.5 md:h-4 fill-current ${isSpinning ? 'animate-spin' : ''}`} />
+                <Play className={`w-4 md:w-5 h-4 md:h-5 fill-current ${isSpinning ? 'animate-spin' : ''}`} />
                 {isSpinning ? 'GIRANDO...' : 'EXTRAER BOLA'}
               </button>
 
@@ -1361,34 +1446,32 @@ export default function BingoApp() {
         <div className="flex flex-col gap-3 min-h-0 lg:justify-between order-3 lg:order-3">
           {/* Box: PREMIOS DEL SORTEO */}
           <div 
-            className="bg-[#0e0524] rounded-2xl border border-[#221443] p-4 flex-1 flex flex-col min-h-0 relative overflow-hidden"
-            style={{
-              backgroundImage: `linear-gradient(rgba(14, 5, 36, 0.75), rgba(14, 5, 36, 0.85)), url(${bingoBlackBgVertical})`,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-              backgroundRepeat: 'no-repeat'
-            }}
+            className="bg-[#1a0e0e] rounded-2xl border border-[#3d1f1f] p-3.5 flex-1 flex flex-col min-h-0 relative overflow-hidden"
           >
-            <div className="flex items-center gap-2 mb-3 shrink-0">
-              <div className="w-6 h-6 rounded-lg bg-yellow-500/10 flex items-center justify-center border border-yellow-500/20">
-                <Trophy className="w-3.5 h-3.5 text-yellow-500" />
-              </div>
-              <p className="text-[10px] font-black uppercase tracking-[.2em] text-[#7c7297]">Premios del sorteo</p>
+            {/* Watermark Logo */}
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-10">
+              <img src={bolilloLogo} alt="Bolillo Watermark" className="w-56 h-56 object-cover rounded-full" style={{ clipPath: 'circle(48% at 50% 50%)' }} />
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-2 gap-2 overflow-y-auto pr-1 flex-1">
+            <div className="flex items-center gap-2 mb-2.5 shrink-0">
+              <div className="w-6 h-6 rounded-lg bg-[#C5A052]/10 flex items-center justify-center border border-[#C5A052]/30">
+                <Trophy className="w-3.5 h-3.5 text-[#C5A052]" />
+              </div>
+              <p className="text-[10px] font-black uppercase tracking-[.2em] text-[#C5A052] font-serif">Premios del sorteo</p>
+            </div>
+            <div className="grid grid-cols-2 gap-2 overflow-y-auto pr-1 pb-6 flex-1 custom-scrollbar">
               {prizes.map((prize, idx) => (
                 <div key={prize.id} className={`flex flex-col overflow-hidden rounded-xl border transition-all duration-300 ${
                   prize.status === 'GANADO'
-                    ? 'border-success bg-success/5 shadow-[0_0_15px_rgba(16,185,129,0.15)]'
-                    : 'border-[#221443] bg-[#120a2e]/50'
+                    ? 'border-emerald-500 bg-emerald-950/30 shadow-[0_0_20px_rgba(16,185,129,0.25)]'
+                    : 'border-[#3d1f1f] bg-[#0d0808]/90'
                 }`}>
-                  <div className="py-2 px-2 text-center border-b border-[#221443]/40 bg-[#0e0524]/50">
-                    <div className="text-[9px] font-black truncate uppercase tracking-wider text-[#7c7297]">
+                  <div className="py-1 px-1 text-center border-b border-[#3d1f1f] bg-[#0a0505] min-h-[30px] flex items-center justify-center">
+                    <div className="text-[9px] md:text-[10px] lg:text-xs font-black uppercase tracking-wide text-[#C5A052] leading-tight break-words font-serif">
                       {idx + 1}° {prize.name}
                     </div>
                   </div>
-                  <div className="py-3 flex justify-center bg-[#09031a]/40">
-                    <div className="grid grid-cols-5 gap-[3px]">
+                  <div className="py-1.5 md:py-2 flex justify-center bg-[#0d0808]/60">
+                    <div className="grid grid-cols-5 gap-[2.5px]">
                       {prize.pattern.flatMap((row, rIdx) => row.map((cell, cIdx) => {
                         let isPattern = cell === 1;
 
@@ -1423,45 +1506,66 @@ export default function BingoApp() {
                             isPattern = activeCorner.some(([r, c]) => r === rIdx && c === cIdx);
                           } else if (prize.rule === 'BINGO_LOCO') {
                             const locoPatterns = [
-                              [[1,0,1,0,0],[0,1,0,0,1],[1,0,0,1,0],[0,0,1,0,1],[0,1,0,1,0]],
-                              [[0,1,0,1,0],[1,0,0,1,0],[0,0,1,0,1],[1,0,0,0,1],[0,1,1,0,0]],
-                              [[0,0,1,0,1],[0,1,0,1,0],[1,0,1,0,0],[0,1,0,0,1],[1,0,0,1,0]],
-                              [[1,0,0,1,0],[0,0,1,0,1],[0,1,0,1,0],[1,0,1,0,0],[0,1,0,0,1]],
+                              [[1,0,1,0,0],[0,1,0,0,1],[1,0,0,1,0],[0,0,0,0,1],[0,1,0,1,0]],
+                              [[0,1,0,1,0],[1,0,0,1,0],[0,0,0,0,1],[1,0,0,0,1],[0,1,1,0,0]],
+                              [[0,0,1,0,1],[0,1,0,1,0],[1,0,0,0,0],[0,1,0,0,1],[1,0,0,1,0]],
+                              [[1,0,0,1,0],[0,0,1,0,1],[0,1,0,1,0],[1,0,0,0,0],[0,1,0,0,1]],
                             ];
                             isPattern = locoPatterns[animationTick % 4][rIdx][cIdx] === 1;
                           }
+
+                          if (rIdx === 2 && cIdx === 2) isPattern = false;
                         }
 
                         return (
                           <div 
                             key={`${rIdx}-${cIdx}`} 
-                            className={`w-2.5 h-2.5 sm:w-3 sm:h-3 transition-all duration-300 ${
+                            className={`w-2 h-2 sm:w-2.5 sm:h-2.5 transition-all duration-300 ${
                               isPattern 
                                 ? (prize.status === 'GANADO' 
-                                    ? 'bg-success rounded-full shadow-[0_0_8px_rgba(16,185,129,0.7)]' 
-                                    : 'bg-yellow-400 rounded-full shadow-[0_0_8px_rgba(234,179,8,0.8)] scale-110') 
-                                : 'bg-[#060212] rounded-sm border border-[#221443]/40'
+                                    ? 'bg-emerald-400 rounded-full shadow-[0_0_8px_rgba(16,185,129,0.9)]' 
+                                    : 'bg-[#C5A052] rounded-full shadow-[0_0_8px_rgba(197,160,82,0.8)] scale-110') 
+                                : 'bg-[#0f0a0a] rounded-sm border border-[#3d1f1f]/50'
                             }`} 
                           />
                         )
                       }))}
                     </div>
                   </div>
-                  <div className={`py-1.5 px-1.5 text-center text-[8px] font-black uppercase tracking-wider border-t border-[#221443]/30 ${
-                    prize.status === 'GANADO' ? 'bg-success text-white' : prize.winners.length > 0 ? 'bg-yellow-500/20 text-yellow-400' : 'text-[#7c7297]/60 bg-[#0a041a]/40'
+                  <div className={`py-1 px-1 text-center border-t border-[#3d1f1f] transition-all text-[9px] ${
+                    prize.status === 'GANADO' 
+                      ? 'bg-gradient-to-r from-emerald-600 to-green-600 text-white shadow-md' 
+                      : prize.winners.length > 0 
+                        ? 'bg-[#C5A052]/20 text-[#C5A052] border-t border-[#C5A052]/40' 
+                        : 'text-[#8a7262]/60 bg-[#0f0a0a]/60'
                   }`}>
                     {prize.status === 'GANADO' 
-                      ? `✓ ${prize.winners.map(w => `#${w}`).join(', ')}` 
+                      ? (
+                        <div className="flex flex-col items-center justify-center gap-0.5 py-0.5">
+                          <span className="text-[9px] uppercase font-black tracking-widest text-emerald-200">GANADOR(ES)</span>
+                          <span className="text-xs md:text-sm font-black text-white drop-shadow">
+                            🏆 #{prize.winners.join(', #')}
+                          </span>
+                        </div>
+                      ) 
                       : prize.winners.length > 0 
-                        ? `${prize.winners.map(w => `#${w}`).join(', ')}` 
+                        ? (
+                          <div className="flex flex-col items-center justify-center gap-0.5">
+                            <span className="text-[8px] uppercase font-black tracking-widest text-[#C5A052]/80">DETECTADO</span>
+                            <span className="text-xs font-black text-[#C5A052]">
+                              🎯 #{prize.winners.join(', #')}
+                            </span>
+                          </div>
+                        ) 
                         : 'Pendiente'}
                   </div>
                   {prize.winners.length > 0 && prize.status !== 'GANADO' && (
                     <button
                       onClick={(e) => { e.stopPropagation(); closePrize(prize.id); }}
-                      className="w-full py-1.5 bg-success/20 hover:bg-success/30 text-success text-[8px] font-black uppercase tracking-wider transition-all cursor-pointer border-t border-success/20"
+                      className="w-full py-2 bg-gradient-to-r from-emerald-600 via-green-600 to-emerald-500 hover:from-emerald-500 hover:to-green-500 text-white text-xs font-black uppercase tracking-wider transition-all duration-200 cursor-pointer border-t-2 border-emerald-400/40 shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-1.5 hover:scale-[1.02] active:scale-95"
                     >
-                      Cerrar Jugada ✓
+                      <span>🔒 CERRAR JUGADA</span>
+                      <span>✓</span>
                     </button>
                   )}
                 </div>
@@ -1474,32 +1578,44 @@ export default function BingoApp() {
             <button
               onClick={openVerifyModal}
               disabled={gameState === 'VERIFICANDO'}
-              className="w-full h-14 bg-gradient-to-r from-red-600 to-rose-700 hover:from-red-500 hover:to-rose-600 text-white font-black text-xs rounded-2xl shadow-lg shadow-red-600/10 hover:shadow-red-600/30 hover:scale-[1.01] active:scale-98 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed border border-red-500/20 tracking-wider font-sans font-black"
+              className="w-full h-14 bg-gradient-to-r from-[#8B1A1A] via-red-700 to-[#6b1414] hover:from-red-600 hover:to-[#8B1A1A] text-white font-black text-xs md:text-sm rounded-2xl shadow-xl shadow-[#8B1A1A]/30 hover:shadow-[#8B1A1A]/50 hover:scale-[1.01] active:scale-98 transition-all flex items-center justify-center gap-2.5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed border border-red-400/30 tracking-widest font-sans uppercase"
             >
-              <AlertTriangle className="w-4 h-4 shrink-0" />
+              <AlertTriangle className="w-5 h-5 shrink-0" />
               ¡VERIFICAR GANADOR!
             </button>
-            <button
-              onClick={resetGame}
-              className="w-full h-11 bg-transparent border border-[#221443] hover:border-purple-500/30 rounded-xl hover:bg-purple-500/5 active:scale-98 transition-all flex items-center justify-center gap-2 text-[#7c7297] hover:text-white cursor-pointer text-xs font-bold"
-              title="Reiniciar juego"
-            >
-              <RotateCcw className="w-3.5 h-3.5" />
-              Reiniciar sorteo
-            </button>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => {
+                  handleResetRaffle()
+                  setShowRaffleModal(true)
+                }}
+                className="h-11 bg-gradient-to-r from-[#C5A052] to-[#d4b366] hover:from-[#d4b366] hover:to-[#e6cb85] text-[#1a0e0e] border border-[#C5A052]/40 rounded-xl active:scale-98 transition-all flex items-center justify-center gap-1.5 font-black text-xs font-serif shadow-md cursor-pointer"
+                title="Sorteo / Rifa de cartones"
+              >
+                🎟️ Rifa de Cartones
+              </button>
+              <button
+                onClick={resetGame}
+                className="h-11 bg-[#1a0e0e]/80 border border-[#3d1f1f] hover:border-[#C5A052]/40 rounded-xl hover:bg-[#2d1515] active:scale-98 transition-all flex items-center justify-center gap-1.5 text-[#8a7262] hover:text-[#C5A052] cursor-pointer text-xs font-bold font-sans"
+                title="Reiniciar juego"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                Reiniciar
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Footer: PROGRESO DEL SORTEO */}
-      <div className="shrink-0 bg-[#0e0524] rounded-xl border border-[#221443] px-4 py-3.5 mt-3">
+      <div className="shrink-0 bg-[#1a0e0e] rounded-xl border border-[#3d1f1f] px-4 py-3.5 mt-3">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-[10px] font-black text-[#7c7297] uppercase tracking-[0.2em]">Progreso del sorteo</span>
-          <span className="text-xs font-black text-yellow-400">{Math.round((totalCalled / 75) * 100)}%</span>
+          <span className="text-[10px] font-black text-[#8a7262] uppercase tracking-[0.2em] font-serif">Progreso del sorteo</span>
+          <span className="text-xs font-black text-[#C5A052] font-serif">{Math.round((totalCalled / 75) * 100)}%</span>
         </div>
-        <div className="w-full h-2 bg-[#060212] rounded-full overflow-hidden border border-[#221443]/30">
+        <div className="w-full h-2 bg-[#0d0808] rounded-full overflow-hidden border border-[#3d1f1f]">
           <div 
-            className="h-full bg-gradient-to-r from-indigo-600 via-purple-600 to-fuchsia-500 rounded-full transition-all duration-700 ease-out shadow-[0_0_8px_rgba(139,92,246,0.5)]" 
+            className="h-full bg-gradient-to-r from-[#8B1A1A] via-[#C5A052] to-[#d4b366] rounded-full transition-all duration-700 ease-out shadow-[0_0_8px_rgba(197,160,82,0.5)]" 
             style={{ width: `${(totalCalled / 75) * 100}%` }} 
           />
         </div>
@@ -1507,17 +1623,17 @@ export default function BingoApp() {
 
       {/* VERIFICATION MODAL */}
       <Dialog open={showVerifyModal} onOpenChange={(open) => { if (!open) cancelVerify() }}>
-        <DialogContent className={`bg-[#0e0524] border border-[#221443] text-white transition-all duration-300 ease-in-out max-h-[90vh] overflow-y-auto ${verificationStage === 'RESULT' ? 'sm:max-w-3xl' : 'sm:max-w-md'}`}>
+        <DialogContent className={`bg-[#1a0e0e] border-2 border-[#C5A052] text-white transition-all duration-300 ease-in-out max-h-[90vh] overflow-y-auto select-none ${verificationStage === 'RESULT' ? 'sm:max-w-3xl' : 'sm:max-w-md'}`}>
           {verificationStage === 'INPUT' ? (
             <>
               <DialogHeader>
-                <DialogTitle className="flex items-center gap-3 text-2xl text-white font-black">
-                  <div className="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center border border-red-500/25">
-                    <AlertTriangle className="w-5 h-5 text-red-500 animate-pulse" />
+                <DialogTitle className="flex items-center gap-3 text-2xl text-[#C5A052] font-black font-serif">
+                  <div className="w-10 h-10 rounded-full bg-[#8B1A1A]/20 flex items-center justify-center border border-[#8B1A1A]/40">
+                    <AlertTriangle className="w-5 h-5 text-[#C5A052] animate-pulse" />
                   </div>
                   MODO VERIFICACIÓN
                 </DialogTitle>
-                <DialogDescription className="text-[#7c7297]">
+                <DialogDescription className="text-[#8a7262] font-sans">
                   Ingrese el número del cartón de bingo para comprobar automáticamente contra las jugadas vigentes.
                 </DialogDescription>
               </DialogHeader>
@@ -1525,13 +1641,13 @@ export default function BingoApp() {
               <div className="space-y-4 py-4">
                 {/* Ticket Number */}
                 <div>
-                  <label className="text-xs font-black text-[#7c7297] uppercase tracking-wider mb-2 block">Número de Ticket a verificar:</label>
+                  <label className="text-xs font-black text-[#8a7262] uppercase tracking-wider mb-2 block font-serif">Número de Ticket a verificar:</label>
                   <input
                     type="text"
                     value={verifyTicket}
                     onChange={(e) => setVerifyTicket(e.target.value)}
                     placeholder="Ej: 00042"
-                    className="w-full h-12 bg-[#180c35] border border-[#221443] rounded-xl px-4 text-xl font-black text-white placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-yellow-500/30 focus:border-yellow-500 transition-all font-mono tracking-widest text-center"
+                    className="w-full h-13 bg-[#0d0808] border border-[#3d1f1f] rounded-xl px-4 text-2xl font-black text-white placeholder:text-[#8a7262]/30 focus:outline-none focus:ring-2 focus:ring-[#C5A052]/40 focus:border-[#C5A052] transition-colors font-mono tracking-widest text-center shadow-inner"
                     autoFocus
                   />
                 </div>
@@ -1542,13 +1658,13 @@ export default function BingoApp() {
                 <button
                   onClick={handlePerformVerification}
                   disabled={!verifyTicket}
-                  className="h-14 w-full bg-gradient-to-r from-yellow-400 via-amber-400 to-amber-500 text-[#0f0729] font-black text-base rounded-xl shadow-lg shadow-yellow-500/15 hover:shadow-yellow-500/30 hover:scale-[1.01] active:scale-98 transition-all disabled:opacity-40 disabled:hover:scale-100 disabled:shadow-none cursor-pointer disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  className="h-14 w-full bg-gradient-to-r from-[#C5A052] via-[#d4b366] to-[#C5A052] hover:brightness-110 text-[#1a0e0e] font-black text-base rounded-xl shadow-lg shadow-[#C5A052]/20 active:scale-98 transition-all disabled:opacity-40 disabled:hover:brightness-100 disabled:shadow-none cursor-pointer disabled:cursor-not-allowed flex items-center justify-center gap-2 font-serif uppercase tracking-wider border border-[#e6cb85]/40"
                 >
                   VERIFICAR AHORA
                 </button>
                 <button
                   onClick={cancelVerify}
-                  className="h-12 w-full bg-[#180c35] border border-[#221443] text-[#7c7297] font-bold text-xs rounded-xl hover:bg-[#221443]/30 hover:text-white active:scale-98 transition-all cursor-pointer flex items-center justify-center gap-2"
+                  className="h-12 w-full bg-[#1a0e0e] border border-[#3d1f1f] text-[#8a7262] hover:text-white font-bold text-xs rounded-xl hover:bg-[#2d1515] active:scale-98 transition-all cursor-pointer flex items-center justify-center gap-2 font-sans"
                 >
                   <X className="w-4 h-4" />
                   CANCELAR
@@ -1559,10 +1675,10 @@ export default function BingoApp() {
             <>
               {/* RESULT STAGE UI */}
               <DialogHeader className="mb-4">
-                <DialogTitle className="text-2xl text-center text-white font-black">
+                <DialogTitle className="text-2xl text-center text-[#C5A052] font-black font-serif">
                   Resultado de Verificación
                 </DialogTitle>
-                <DialogDescription className="text-center text-[#7c7297]">
+                <DialogDescription className="text-center text-[#8a7262] font-sans">
                   Comparación visual del Ticket #{verifyTicket} contra bolas cantadas
                 </DialogDescription>
               </DialogHeader>
@@ -1570,7 +1686,7 @@ export default function BingoApp() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
                 
                 {/* COL 1: Visual Matrix */}
-                <div className="bg-[#0b041a] p-4 rounded-2xl border border-[#221443] flex flex-col items-center justify-center shadow-inner">
+                <div className="bg-[#0d0808] p-4 rounded-2xl border border-[#3d1f1f] flex flex-col items-center justify-center shadow-inner">
                   <div className="grid grid-cols-5 gap-1 mb-1.5 w-full max-w-[250px]">
                     {BINGO_LETTERS.map(letter => {
                       const colors = {
@@ -1581,7 +1697,7 @@ export default function BingoApp() {
                         O: 'bg-orange-600 text-white shadow-[0_0_8px_rgba(249,115,22,0.3)]',
                       }
                       return (
-                        <div key={letter} className={`flex items-center justify-center font-black rounded ${colors[letter]} py-1.5 text-xs leading-none`}>
+                        <div key={letter} className={`flex items-center justify-center font-black rounded ${colors[letter]} py-1.5 text-xs leading-none font-serif`}>
                           {letter}
                         </div>
                       )
@@ -1602,10 +1718,10 @@ export default function BingoApp() {
                         let styleClasses = "aspect-square flex items-center justify-center rounded font-black text-xs transition-all relative ";
                         
                         if (cell === 0) {
-                          styleClasses += "bg-yellow-500/20 text-yellow-500 border border-yellow-500/30";
+                          styleClasses += "bg-[#C5A052]/20 text-[#C5A052] border border-[#C5A052]/40";
                         } else if (isLastCalled) {
                           // Último número cantado — resaltado dorado especial
-                          styleClasses += "bg-gradient-to-br from-yellow-400 to-amber-500 text-background border-2 border-white shadow-[0_0_15px_rgba(234,179,8,0.9)] z-10 scale-105 animate-pulse";
+                          styleClasses += "bg-gradient-to-br from-[#C5A052] to-[#d4b366] text-[#1a0e0e] border-2 border-white shadow-[0_0_15px_rgba(197,160,82,0.9)] z-10 scale-105 animate-pulse font-serif";
                         } else if (isMatched && isRequired) {
                           if (hasLinePrize) {
                             styleClasses += "animate-winning-line text-white z-20 scale-110 border-2";
@@ -1617,12 +1733,12 @@ export default function BingoApp() {
                         } else if (isFailedRequired) {
                           styleClasses += "bg-danger/20 text-danger border-2 border-danger shadow-[0_0_15px_rgba(220,38,38,0.4)] z-10 animate-pulse";
                         } else {
-                          styleClasses += "bg-[#0c051f]/40 text-[#7c7297]/40 border border-[#221443]/30";
+                          styleClasses += "bg-[#1a0e0e] text-[#8a7262]/50 border border-[#3d1f1f]";
                         }
 
                         return (
                           <div key={`${rIdx}-${cIdx}`} className={styleClasses}>
-                             {cell === 0 ? <Star className="w-3.5 h-3.5 fill-yellow-500 text-yellow-500" /> : cell}
+                             {cell === 0 ? <img src={bolilloLogo} alt="Logo" className="w-5 h-5 object-contain rounded-full" /> : cell}
                              {isRequired && !isMatched && (
                                <div className="absolute inset-0 border-[2px] border-danger rounded z-20 pointer-events-none" />
                              )}
@@ -1659,17 +1775,17 @@ export default function BingoApp() {
                     )}
                   </div>
 
-                  <div className="bg-[#180c35] rounded-xl border border-[#221443] p-4 text-center">
-                     <p className="text-[10px] text-[#7c7297] mb-1.5 uppercase tracking-widest font-black">Resumen de Casillas</p>
-                     <p className="text-white text-base font-black">
+                  <div className="bg-[#1a0e0e] rounded-xl border border-[#3d1f1f] p-4 text-center">
+                     <p className="text-[10px] text-[#8a7262] mb-1.5 uppercase tracking-widest font-black font-serif">Resumen de Casillas</p>
+                     <p className="text-white text-base font-black font-serif">
                        Aciertos del Cartón: <span className={verificationResult === 'WINNER' ? 'text-success' : verificationResult === 'PISADO' ? 'text-amber-400' : 'text-danger'}>{matchedTicketDetails.matchedCount}</span> / 25
                      </p>
                      <p className="text-xs font-black mt-2 whitespace-pre-line leading-tight">
                        {verificationResult === 'WINNER' 
-                         ? <span className="text-yellow-400">{`JUGADAS LOGRADAS:\n${matchedTicketDetails.wonPrizeNames.join(', ')}`}</span>
+                         ? <span className="text-[#C5A052] font-serif">{`JUGADAS LOGRADAS:\n${matchedTicketDetails.wonPrizeNames.join(', ')}`}</span>
                          : verificationResult === 'PISADO'
-                           ? <span className="text-amber-400">{`JUGADAS PISADAS:\n${matchedTicketDetails.pisadoPrizeNames.join(', ')}`}</span>
-                           : <span className="text-danger">No coincide con ningún patrón activo.</span>}
+                           ? <span className="text-amber-400 font-serif">{`JUGADAS PISADAS:\n${matchedTicketDetails.pisadoPrizeNames.join(', ')}`}</span>
+                           : <span className="text-danger font-serif">No coincide con ningún patrón activo.</span>}
                      </p>
                   </div>
 
@@ -1677,7 +1793,7 @@ export default function BingoApp() {
                     {verificationResult === 'WINNER' && (
                       <button
                         onClick={confirmWinnerAndAssign}
-                        className="h-14 w-full bg-gradient-to-r from-success to-emerald-500 hover:from-emerald-500 hover:to-success text-white font-black text-base rounded-xl shadow-lg shadow-success/15 hover:shadow-success/30 hover:scale-[1.01] active:scale-98 transition-all cursor-pointer flex items-center justify-center gap-2 font-sans"
+                        className="h-14 w-full bg-gradient-to-r from-success to-emerald-500 hover:from-emerald-500 hover:to-success text-white font-black text-base rounded-xl shadow-lg shadow-success/15 hover:brightness-110 active:scale-98 transition-all cursor-pointer flex items-center justify-center gap-2 font-serif"
                       >
                         <Trophy className="w-5 h-5" />
                         Confirmar y Anotar Ganador
@@ -1685,7 +1801,7 @@ export default function BingoApp() {
                     )}
                     <button
                       onClick={cancelVerify}
-                      className="h-11 w-full bg-[#180c35] border border-[#221443] text-[#7c7297] hover:text-white font-bold text-xs rounded-xl hover:bg-[#221443]/30 active:scale-98 transition-all cursor-pointer flex items-center justify-center gap-2"
+                      className="h-11 w-full bg-[#1a0e0e] border border-[#3d1f1f] text-[#8a7262] hover:text-white font-bold text-xs rounded-xl hover:bg-[#2d1515] active:scale-98 transition-all cursor-pointer flex items-center justify-center gap-2 font-sans"
                     >
                       <X className="w-4 h-4" />
                       Cerrar Verificación
@@ -1696,6 +1812,131 @@ export default function BingoApp() {
               </div>
             </>
           ) : null}
+        </DialogContent>
+      </Dialog>
+
+      {/* RAFFLE / SORTEO MODAL */}
+      <Dialog open={showRaffleModal} onOpenChange={(open) => { if (!open && !isRaffleSpinning) setShowRaffleModal(false) }}>
+        <DialogContent className="bg-[#1a0e0e] border-2 border-[#C5A052] text-white sm:max-w-xl p-6 rounded-2xl shadow-2xl max-h-[85vh] overflow-y-auto select-none font-serif">
+          
+          {/* Explicit Top Right Close X Button */}
+          <button 
+            onClick={() => {
+              setIsRaffleSpinning(false)
+              setShowRaffleModal(false)
+            }}
+            className="absolute right-4 top-4 p-2 text-[#C5A052] hover:text-white rounded-lg hover:bg-[#3d1f1f] transition-all cursor-pointer z-50"
+            title="Cerrar ventana"
+          >
+            <X className="w-6 h-6" />
+          </button>
+
+          {/* Watermark Logo */}
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-10">
+            <img src={bolilloLogo} alt="Logo Watermark" className="w-80 h-80 object-cover rounded-full" style={{ clipPath: 'circle(48% at 50% 50%)' }} />
+          </div>
+
+          {/* Header */}
+          <DialogHeader className="text-center pb-2 border-b border-[#3d1f1f] relative z-10">
+            <div className="flex items-center justify-center gap-2 mb-1">
+              <img src={bolilloLogo} alt="Logo" className="w-10 h-10 object-contain drop-shadow" />
+              <span className="text-[#C5A052] text-xl font-black uppercase tracking-wider font-serif">BOLILLO DE LA SUERTE</span>
+            </div>
+            <DialogTitle className="text-2xl font-black text-white uppercase tracking-widest font-serif drop-shadow">
+              🎟️ RIFA Y SORTEO DE CARTONES
+            </DialogTitle>
+            <DialogDescription className="text-xs text-[#8a7262] font-sans">
+              Sorteo aleatorio entre los 1.000 cartones participando en el juego
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="py-3 space-y-4 relative z-10">
+            {/* Draw Button (Top Action) */}
+            {!isRaffleSpinning && (
+              <button
+                onClick={handleDrawOneRaffleWinner}
+                className="h-14 w-full bg-gradient-to-r from-[#C5A052] via-[#d4b366] to-[#C5A052] hover:from-[#d4b366] hover:to-[#e6cb85] text-[#1a0e0e] font-black text-sm md:text-base rounded-xl shadow-xl shadow-[#C5A052]/20 hover:shadow-[#C5A052]/40 hover:scale-[1.01] active:scale-98 transition-all cursor-pointer flex items-center justify-center font-serif uppercase tracking-wider border border-[#e6cb85]/40"
+              >
+                ¡SORTEAR CARTÓN PUESTO #{raffleWinners.length + 1}!
+              </button>
+            )}
+
+            {/* Spinning animation screen */}
+            {isRaffleSpinning && (
+              <div className="flex flex-col items-center justify-center py-6 gap-3 bg-[#0d0808]/90 border border-[#C5A052]/40 rounded-2xl">
+                <div className="text-[10px] font-black uppercase tracking-[0.3em] text-[#C5A052] animate-pulse font-serif">
+                  ✦ SORTEANDO PUESTO #{raffleWinners.length + 1} ✦
+                </div>
+                <div className="text-5xl font-black text-white font-serif tracking-tighter drop-shadow-[0_0_20px_rgba(197,160,82,0.8)]">
+                  #{String(raffleTempNum || 1).padStart(6, '0')}
+                </div>
+                <div className="text-xs text-[#8a7262] font-sans animate-bounce">
+                  Girando ruleta de cartones...
+                </div>
+              </div>
+            )}
+
+            {/* Winner Display Screen (Adaptable List Underneath Button) */}
+            {raffleWinners.length > 0 && !isRaffleSpinning && (
+              <div className="space-y-2.5 bg-[#0d0808]/80 p-3 rounded-xl border border-[#3d1f1f]">
+                <div className="flex items-center justify-between border-b border-[#3d1f1f] pb-2">
+                  <span className="bg-[#8B1A1A] text-[#E2C070] px-3 py-1 rounded-sm text-xs font-black tracking-widest uppercase font-serif border border-[#C5A052]/40 shadow-sm">
+                    🏆 CARTONES GANADORES ({raffleWinners.length})
+                  </span>
+                  <button
+                    onClick={handleResetRaffle}
+                    className="text-[10px] text-[#C5A052] hover:text-white font-bold underline cursor-pointer"
+                  >
+                    Reiniciar
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[180px] overflow-y-auto pr-1 custom-scrollbar">
+                  {raffleWinners.map((winNum, idx) => (
+                    <div key={winNum} className="bg-gradient-to-br from-[#2d1515] via-[#1a0e0e] to-[#0d0808] border-2 border-[#C5A052] p-2.5 rounded-xl flex flex-col items-center justify-center shadow-xl relative overflow-hidden">
+                      <div className="absolute top-1 right-2 text-[#C5A052]/40 text-xs font-serif">❧</div>
+                      <span className="text-[9px] font-black uppercase tracking-widest text-[#C5A052] font-serif">
+                        PUESTO #{idx + 1}
+                      </span>
+                      <span className="text-2xl font-black text-white tracking-tight my-0.5 font-serif drop-shadow-md">
+                        #{winNum}
+                      </span>
+                      <span className="text-[8px] font-bold text-[#8a7262] uppercase tracking-wider font-sans">
+                        Cartón Premiado
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Controls & Stamp */}
+                <div className="flex items-center justify-between border-t border-[#3d1f1f] pt-2">
+                  <span className="text-[8px] font-black text-[#8a7262] uppercase tracking-widest font-serif">
+                    ❖ OFICIAL - BOLILLO DE LA SUERTE ❖
+                  </span>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(`Ganadores Rifa Bolillo de la Suerte: Cartones #${raffleWinners.join(', #')}`)
+                      alert('¡Lista de cartones ganadores copiada al portapapeles!')
+                    }}
+                    className="px-3 py-1 bg-[#1a0e0e] border border-[#3d1f1f] text-[#C5A052] hover:text-white font-bold text-[10px] rounded-lg cursor-pointer"
+                  >
+                    Copiar Lista
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Close Button */}
+            {!isRaffleSpinning && (
+              <button
+                onClick={() => setShowRaffleModal(false)}
+                className="h-9 w-full bg-[#1a0e0e] border border-[#3d1f1f] text-[#8a7262] font-bold text-xs rounded-xl hover:bg-[#2d1515] hover:text-white active:scale-98 transition-all cursor-pointer flex items-center justify-center gap-2 font-sans"
+              >
+                <X className="w-3.5 h-3.5" />
+                CERRAR VENTANA
+              </button>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </div>

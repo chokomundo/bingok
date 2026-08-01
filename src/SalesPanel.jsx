@@ -110,21 +110,6 @@ export default function SalesPanel() {
           }
         })
         .catch(() => {})
-
-      fetch('/bingo_seller_groups.json')
-        .then(r => r.json())
-        .then(data => {
-          if (Array.isArray(data)) {
-            setSellerGroups(prev => {
-              if (JSON.stringify(prev) !== JSON.stringify(data)) {
-                localStorage.setItem('bingo_seller_groups', JSON.stringify(data))
-                return data
-              }
-              return prev
-            })
-          }
-        })
-        .catch(() => {})
     }
 
     // Run immediately on mount
@@ -380,7 +365,7 @@ export default function SalesPanel() {
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `reporte_ventas_solibingo_${new Date().toISOString().split('T')[0]}.csv`
+    a.download = `reporte_ventas_bolillodelasuerte_${new Date().toISOString().split('T')[0]}.csv`
     a.click()
     URL.revokeObjectURL(url)
   }
@@ -411,18 +396,6 @@ export default function SalesPanel() {
   
   const [numRowsToGen, setNumRowsToGen] = useState(5)
 
-  // --- SELLER GROUPS STATE ---
-  const [sellerGroups, setSellerGroups] = useState(() => {
-    const stored = localStorage.getItem('bingo_seller_groups')
-    if (stored) {
-      try { const d = JSON.parse(stored); if (Array.isArray(d)) return d } catch {}
-    }
-    return []
-  })
-  const [showGroupModal, setShowGroupModal] = useState(false)
-  const [editingGroup, setEditingGroup] = useState(null)
-  const [groupForm, setGroupForm] = useState({ name: '', sellerIds: [], rowIds: [] })
-
   // Map numbers to beautiful keycap emoji strings (1 -> 1️⃣, 10 -> 🔟, 11 -> 1️⃣1️⃣, 30 -> 3️⃣0️⃣)
   const getEmojiNumber = (n) => {
     if (n === 10) return '🔟'
@@ -430,13 +403,13 @@ export default function SalesPanel() {
     return String(n).split('').map(char => emojis[parseInt(char, 10)] || char).join('')
   }
 
-  // Draw 15 unassigned ticket numbers per row: solo números < 5000
+  // Draw 50 unassigned ticket numbers per row randomly
   const handleGenerateRows = (count) => {
     if (tickets.length === 0) {
       alert('Primero debes cargar una base de datos de cartones en la sección superior.')
       return
     }
-
+    
     const qty = parseInt(count, 10)
     if (isNaN(qty) || qty <= 0) return
 
@@ -446,35 +419,31 @@ export default function SalesPanel() {
       row.numbers.forEach(num => assignedNumbers.add(String(num)))
     })
 
-    // Filter available tickets: only numbers < 5000
-    const availableTickets = tickets.filter(t =>
-      !assignedNumbers.has(String(t.ticket_number)) && Number(t.ticket_number) < 5000
-    )
+    // Filter available tickets
+    const availableTickets = tickets.filter(t => !assignedNumbers.has(String(t.ticket_number)))
 
-    if (availableTickets.length < qty * 15) {
-      alert(`No hay suficientes cartones disponibles (< 5000) para generar ${qty} filas de 15. Quedan ${availableTickets.length} cartones libres.`)
+    if (availableTickets.length < qty * 50) {
+      alert(`No hay suficientes cartones disponibles para generar ${qty} filas de 50. Quedan ${availableTickets.length} cartones libres en la base de datos.`)
       return
     }
 
-    // Shuffle
+    // Shuffle and pick
     const shuffled = [...availableTickets].sort(() => 0.5 - Math.random())
-
     const newRows = []
-    let idx = 0
+    let currentIdx = 0
 
     for (let i = 0; i < qty; i++) {
       const rowNum = sellerRows.length + newRows.length + 1
       const rowNumbers = []
-      for (let j = 0; j < 15; j++) {
-        rowNumbers.push(shuffled[idx].ticket_number)
-        idx++
+      for (let j = 0; j < 50; j++) {
+        rowNumbers.push(shuffled[currentIdx].ticket_number)
+        currentIdx++
       }
-      // Fisher-Yates shuffle
-      for (let j = rowNumbers.length - 1; j > 0; j--) {
-        const k = Math.floor(Math.random() * (j + 1));
-        [rowNumbers[j], rowNumbers[k]] = [rowNumbers[k], rowNumbers[j]]
-      }
-      newRows.push({ id: rowNum, name: '', numbers: rowNumbers })
+      newRows.push({
+        id: rowNum,
+        name: '',
+        numbers: rowNumbers
+      })
     }
 
     const updated = [...sellerRows, ...newRows]
@@ -537,7 +506,7 @@ export default function SalesPanel() {
     sellerRows.forEach(row => {
       const emojiNum = getEmojiNumber(row.id)
       const sellerSuffix = row.name.trim() ? ` - ${row.name.trim()}` : ''
-      text += `*Fila ${row.id} ${emojiNum}${sellerSuffix}*\n`
+      text += `*ASIGNADO ${row.id} ${emojiNum}${sellerSuffix}*\n`
       row.numbers.forEach(num => {
         // Strip leading padding zeros to match "468" instead of "00468"
         text += `${parseInt(num, 10)}\n`
@@ -560,7 +529,7 @@ export default function SalesPanel() {
       try {
         const successful = document.execCommand('copy')
         if (successful) {
-          alert('¡Distribución de Filas copiada en el formato exacto de WhatsApp! 📋📲')
+          alert('¡Distribución de Asignados copiada en el formato exacto de WhatsApp! 📋📲')
         } else {
           alert('No se pudo copiar la distribución al portapapeles.')
         }
@@ -573,7 +542,7 @@ export default function SalesPanel() {
     if (navigator.clipboard && window.isSecureContext) {
       navigator.clipboard.writeText(textToCopy)
         .then(() => {
-          alert('¡Distribución de Filas copiada en el formato exacto de WhatsApp! 📋📲')
+          alert('¡Distribución de Asignados copiada en el formato exacto de WhatsApp! 📋📲')
         })
         .catch(() => {
           fallbackCopyText(textToCopy)
@@ -583,73 +552,8 @@ export default function SalesPanel() {
     }
   }
 
-  // --- SELLER GROUPS HANDLERS ---
-  const handleOpenCreateGroup = () => {
-    setEditingGroup(null)
-    setGroupForm({ name: '', sellerIds: [], rowIds: [] })
-    setShowGroupModal(true)
-  }
-
-  const handleOpenEditGroup = (group) => {
-    setEditingGroup(group)
-    setGroupForm({ name: group.name, sellerIds: [...group.sellerIds], rowIds: [...group.rowIds] })
-    setShowGroupModal(true)
-  }
-
-  const handleToggleSeller = (sellerId) => {
-    setGroupForm(prev => {
-      const exists = prev.sellerIds.includes(sellerId)
-      return { ...prev, sellerIds: exists ? prev.sellerIds.filter(id => id !== sellerId) : [...prev.sellerIds, sellerId] }
-    })
-  }
-
-  const handleToggleRow = (rowId) => {
-    setGroupForm(prev => {
-      const exists = prev.rowIds.includes(rowId)
-      return { ...prev, rowIds: exists ? prev.rowIds.filter(id => id !== rowId) : [...prev.rowIds, rowId] }
-    })
-  }
-
-  const handleSaveGroup = () => {
-    if (!groupForm.name.trim()) { alert('El nombre del grupo es obligatorio'); return }
-    if (groupForm.sellerIds.length === 0) { alert('Selecciona al menos 1 vendedor'); return }
-    if (groupForm.sellerIds.length > 20) { alert('Máximo 20 vendedores por grupo'); return }
-    if (groupForm.rowIds.length === 0) { alert('Selecciona al menos 1 fila'); return }
-    if (groupForm.rowIds.length > 50) { alert('Máximo 50 filas por grupo'); return }
-
-    let updated
-    if (editingGroup) {
-      updated = sellerGroups.map(g => g.id === editingGroup.id ? { ...groupForm, id: editingGroup.id } : g)
-    } else {
-      const newId = sellerGroups.length > 0 ? Math.max(...sellerGroups.map(g => g.id)) + 1 : 1
-      updated = [...sellerGroups, { ...groupForm, id: newId }]
-    }
-
-    setSellerGroups(updated)
-    localStorage.setItem('bingo_seller_groups', JSON.stringify(updated))
-    setShowGroupModal(false)
-
-    fetch('/api/seller-groups', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(updated)
-    }).catch(err => console.warn('[Sync Error] Grupos:', err))
-  }
-
-  const handleDeleteGroup = (groupId) => {
-    if (!window.confirm('¿Eliminar este grupo? Los vendedores perderán acceso a las filas compartidas.')) return
-    const updated = sellerGroups.filter(g => g.id !== groupId)
-    setSellerGroups(updated)
-    localStorage.setItem('bingo_seller_groups', JSON.stringify(updated))
-    fetch('/api/seller-groups', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updated) }).catch(() => {})
-  }
-
   const totalTickets = tickets.length
   const totalDownloads = downloads.length
-  const normalSales = downloads.filter(d => !d.isGift).length
-  const giftSales = downloads.filter(d => d.isGift).length
-  const precioCarton = 5 // Bs por cartón
-  const ganancia = normalSales * precioCarton
   const percentage = totalTickets > 0 ? Math.round((totalDownloads / totalTickets) * 100) : 0
 
   // Group downloads by day or hour
@@ -731,40 +635,40 @@ export default function SalesPanel() {
     <div className="min-h-screen bg-gradient-to-br from-[#0b031e] via-[#080214] to-[#120530] text-white relative overflow-x-hidden font-sans">
       {/* Background ambient lighting */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute -top-40 right-0 w-[500px] h-[500px] bg-indigo-600/10 rounded-full blur-[120px]" />
-        <div className="absolute -bottom-40 left-0 w-[500px] h-[500px] bg-purple-600/10 rounded-full blur-[100px]" />
+        <div className="absolute -top-40 right-0 w-[500px] h-[500px] bg-[#8B1A1A]/10 rounded-full blur-[120px]" />
+        <div className="absolute -bottom-40 left-0 w-[500px] h-[500px] bg-[#8B1A1A]/10 rounded-full blur-[100px]" />
       </div>
 
       <div className="relative z-10 max-w-6xl mx-auto px-4 py-8">
         
         {/* Navigation / Header */}
-        <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 border-b border-[#221443]/40 pb-6">
+        <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 border-b border-[#3d1f1f]/40 pb-6">
           <div className="flex items-center gap-3">
-            <a href="#/hub" className="inline-flex items-center gap-2 px-3 py-1.5 bg-[#0e0524]/60 border border-[#221443]/80 hover:border-[#8b5cf6]/40 text-[#7c7297] hover:text-white text-xs font-black uppercase tracking-wider rounded-lg transition-all duration-300 group shadow-sm shadow-[#000]/40">
+            <a href="#/hub" className="inline-flex items-center gap-2 px-3 py-1.5 bg-[#1a0e0e]/60 border border-[#3d1f1f]/80 hover:border-[#8B1A1A]/40 text-[#8a7262] hover:text-white text-xs font-black uppercase tracking-wider rounded-lg transition-all duration-300 group shadow-sm shadow-[#000]/40">
               <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
               Volver al Hub
             </a>
-            <div className="h-4 w-[1px] bg-[#221443] hidden md:block" />
-            <div className="hidden md:flex items-center gap-1.5 text-xs font-bold text-[#7c7297]">
+            <div className="h-4 w-[1px] bg-[#3d1f1f] hidden md:block" />
+            <div className="hidden md:flex items-center gap-1.5 text-xs font-bold text-[#8a7262]">
               <span>Suite Operación</span>
-              <ChevronRight className="w-3 h-3 text-[#221443]" />
+              <ChevronRight className="w-3 h-3 text-[#3d1f1f]" />
               <span className="text-white">Panel de Ventas</span>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="text-[10px] font-black tracking-widest text-[#7c7297] uppercase">Sistema de Distribución</span>
-            <div className="w-2 h-2 rounded-full bg-indigo-500 shadow-[0_0_8px_#6366f1] animate-pulse" />
+            <span className="text-[10px] font-black tracking-widest text-[#8a7262] uppercase">Sistema de Distribución</span>
+            <div className="w-2 h-2 rounded-full bg-[#a52020] shadow-[0_0_8px_#8B1A1A] animate-pulse" />
           </div>
         </header>
 
         {/* Dashboard Title */}
         <div className="mb-8">
           <h1 className="text-3xl md:text-4xl font-black tracking-tight flex items-center gap-3">
-            <span className="bg-gradient-to-r from-purple-400 via-indigo-400 to-indigo-500 bg-clip-text text-transparent">Distribución</span>{' '}
+            <span className="bg-gradient-to-r from-[#b22222] via-[#b22222] to-[#8B1A1A] bg-clip-text text-transparent">Distribución</span>{' '}
             & Ventas
           </h1>
-          <p className="text-[#7c7297] text-sm mt-1">Cargue y gestione la base de datos de cartones descargables en la landing pública.</p>
+          <p className="text-[#8a7262] text-sm mt-1">Cargue y gestione la base de datos de cartones descargables en la landing pública.</p>
         </div>
 
         {/* Main Grid */}
@@ -774,10 +678,10 @@ export default function SalesPanel() {
           <div className="lg:col-span-8 flex flex-col gap-6">
             
             {/* ── JSON Management Section ── */}
-            <section className="bg-[#0e0524]/60 backdrop-blur-xl border border-[#221443] rounded-3xl p-5 md:p-6 shadow-[0_20px_50px_rgba(0,0,0,0.3)]">
+            <section className="bg-[#1a0e0e]/60 backdrop-blur-xl border border-[#3d1f1f] rounded-3xl p-5 md:p-6 shadow-[0_20px_50px_rgba(0,0,0,0.3)]">
               <div className="flex items-center gap-2 mb-4">
-                <FileJson className="w-4 h-4 text-[#8b5cf6]" />
-                <h2 className="text-xs font-black uppercase tracking-[0.2em] text-[#7c7297]">Gestión de Base de Datos</h2>
+                <FileJson className="w-4 h-4 text-[#8B1A1A]" />
+                <h2 className="text-xs font-black uppercase tracking-[0.2em] text-[#8a7262]">Gestión de Base de Datos</h2>
               </div>
 
               {/* Status Banner */}
@@ -792,8 +696,8 @@ export default function SalesPanel() {
                       <CheckCircle className="w-6 h-6 text-emerald-400 shrink-0 mt-0.5" />
                       <div>
                         <p className="text-base font-black text-white">Base de datos de cartones activa</p>
-                        <p className="text-xs text-[#7c7297] mt-1 leading-relaxed">
-                          Se registran <span className="text-emerald-400 font-bold font-mono">{totalTickets.toLocaleString()}</span> cartones válidos. El buscador público está <span className="text-emerald-400 font-bold">habilitado</span> en <a href="#/buscar" className="text-amber-400 hover:underline font-bold font-mono">#/buscar</a>.
+                        <p className="text-xs text-[#8a7262] mt-1 leading-relaxed">
+                          Se registran <span className="text-emerald-400 font-bold font-mono">{totalTickets.toLocaleString()}</span> cartones válidos. El buscador público está <span className="text-emerald-400 font-bold">habilitado</span> en <a href="#/buscar" className="text-[#C5A052] hover:underline font-bold font-mono">#/buscar</a>.
                         </p>
                       </div>
                     </>
@@ -802,7 +706,7 @@ export default function SalesPanel() {
                       <AlertTriangle className="w-6 h-6 text-red-400 shrink-0 mt-0.5" />
                       <div>
                         <p className="text-base font-black text-white">Distribución inactiva</p>
-                        <p className="text-xs text-[#7c7297] mt-1 leading-relaxed">
+                        <p className="text-xs text-[#8a7262] mt-1 leading-relaxed">
                           No hay base de datos cargada. El buscador público mostrará un aviso de inactividad para los clientes.
                         </p>
                       </div>
@@ -820,7 +724,7 @@ export default function SalesPanel() {
 
               {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row gap-3">
-                <label className="flex items-center justify-center gap-2 h-12 px-6 bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-yellow-400 text-[#0f0729] font-black text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-amber-500/15 hover:shadow-amber-500/30 hover:scale-[1.01] active:scale-[0.99] transition-all cursor-pointer">
+                <label className="flex items-center justify-center gap-2 h-12 px-6 bg-gradient-to-r from-[#C5A052] to-[#d4b366] hover:from-[#d4b366] hover:to-[#dcc07a] text-[#0f0a0a] font-black text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-[#C5A052]/15 hover:shadow-[#C5A052]/30 hover:scale-[1.01] active:scale-[0.99] transition-all cursor-pointer">
                   <Upload className="w-4 h-4" />
                   Cargar JSON de Cartones
                   <input type="file" accept=".json" onChange={handleUploadJSON} className="hidden" />
@@ -829,14 +733,14 @@ export default function SalesPanel() {
                   <>
                     <button
                       onClick={handleDownloadJSON}
-                      className="flex items-center justify-center gap-2 h-12 px-6 bg-purple-500/20 border border-purple-500/30 text-purple-300 font-black text-xs uppercase tracking-wider rounded-xl hover:bg-purple-500/30 active:scale-[0.99] transition-all cursor-pointer"
+                      className="flex items-center justify-center gap-2 h-12 px-6 bg-[#8B1A1A]/20 border border-[#8B1A1A]/30 text-[#b22222] font-black text-xs uppercase tracking-wider rounded-xl hover:bg-[#a52020]/30 active:scale-[0.99] transition-all cursor-pointer"
                     >
                       <Download className="w-4 h-4" />
                       Descargar JSON Activo
                     </button>
                     <button
                       onClick={() => setShowConfirmReset(true)}
-                      className="flex items-center justify-center gap-2 h-12 px-6 bg-amber-500/10 border border-amber-500/20 text-amber-400 font-black text-xs uppercase tracking-wider rounded-xl hover:bg-amber-500/20 hover:border-amber-500/30 active:scale-[0.99] transition-all cursor-pointer"
+                      className="flex items-center justify-center gap-2 h-12 px-6 bg-[#C5A052]/10 border border-[#C5A052]/20 text-[#C5A052] font-black text-xs uppercase tracking-wider rounded-xl hover:bg-[#C5A052]/20 hover:border-[#C5A052]/30 active:scale-[0.99] transition-all cursor-pointer"
                     >
                       <Clock className="w-4 h-4" />
                       Restablecer Descargas a 0
@@ -854,25 +758,25 @@ export default function SalesPanel() {
             </section>
 
             {/* ── Sales Performance Chart Section ── */}
-            <section className="bg-[#0e0524]/60 backdrop-blur-xl border border-[#221443] rounded-3xl p-5 md:p-6 shadow-[0_20px_50px_rgba(0,0,0,0.3)] flex flex-col gap-5">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#221443]/40 pb-4">
+            <section className="bg-[#1a0e0e]/60 backdrop-blur-xl border border-[#3d1f1f] rounded-3xl p-5 md:p-6 shadow-[0_20px_50px_rgba(0,0,0,0.3)] flex flex-col gap-5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#3d1f1f]/40 pb-4">
                 <div className="flex items-center gap-2.5">
-                  <BarChart3 className="w-5 h-5 text-purple-400" />
+                  <BarChart3 className="w-5 h-5 text-[#b22222]" />
                   <div>
-                    <h2 className="text-xs font-black uppercase tracking-[0.2em] text-[#7c7297]">Desempeño de Ventas</h2>
-                    <p className="text-[10px] text-[#7c7297]/60 font-semibold mt-0.5">Reporte de boletos distribuidos</p>
+                    <h2 className="text-xs font-black uppercase tracking-[0.2em] text-[#8a7262]">Desempeño de Ventas</h2>
+                    <p className="text-[10px] text-[#8a7262]/60 font-semibold mt-0.5">Reporte gráfico de boletos distribuidos</p>
                   </div>
                 </div>
 
                 {/* Tabs to switch chart view */}
                 {downloads.length > 0 && (
-                  <div className="flex bg-[#080214] border border-[#221443] p-1 rounded-xl shrink-0 self-start sm:self-center">
+                  <div className="flex bg-[#080214] border border-[#3d1f1f] p-1 rounded-xl shrink-0 self-start sm:self-center">
                     <button
                       onClick={() => setActiveChartTab('time')}
                       className={`px-3.5 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer ${
                         activeChartTab === 'time'
-                          ? 'bg-[#8b5cf6] text-white shadow-sm'
-                          : 'text-[#7c7297] hover:text-white'
+                          ? 'bg-[#8B1A1A] text-white shadow-sm'
+                          : 'text-[#8a7262] hover:text-white'
                       }`}
                     >
                       Por Horas/Días
@@ -881,8 +785,8 @@ export default function SalesPanel() {
                       onClick={() => setActiveChartTab('seller')}
                       className={`px-3.5 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer ${
                         activeChartTab === 'seller'
-                          ? 'bg-[#8b5cf6] text-white shadow-sm'
-                          : 'text-[#7c7297] hover:text-white'
+                          ? 'bg-[#8B1A1A] text-white shadow-sm'
+                          : 'text-[#8a7262] hover:text-white'
                       }`}
                     >
                       Por Vendedor
@@ -891,48 +795,24 @@ export default function SalesPanel() {
                 )}
               </div>
 
-              {/* ── Stats Summary Cards ── */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <div className="bg-[#180c35]/40 border border-purple-500/20 rounded-2xl p-3 flex flex-col gap-1">
-                  <span className="text-[9px] font-black uppercase tracking-wider text-[#7c7297]">Vendidos</span>
-                  <span className="text-xl font-black text-purple-400 font-mono">{normalSales}</span>
-                  <span className="text-[9px] text-[#7c7297]/50">{normalSales * precioCarton} Bs</span>
-                </div>
-                <div className="bg-[#180c35]/40 border border-emerald-500/20 rounded-2xl p-3 flex flex-col gap-1">
-                  <span className="text-[9px] font-black uppercase tracking-wider text-[#7c7297]">Regalos</span>
-                  <span className="text-xl font-black text-emerald-400 font-mono">{giftSales}</span>
-                  <span className="text-[9px] text-[#7c7297]/50">Sin costo</span>
-                </div>
-                <div className="bg-[#180c35]/40 border border-amber-500/20 rounded-2xl p-3 flex flex-col gap-1">
-                  <span className="text-[9px] font-black uppercase tracking-wider text-[#7c7297]">Total Entregados</span>
-                  <span className="text-xl font-black text-amber-400 font-mono">{totalDownloads}</span>
-                  <span className="text-[9px] text-[#7c7297]/50">de {totalTickets.toLocaleString()}</span>
-                </div>
-                <div className="bg-[#180c35]/40 border border-green-500/20 rounded-2xl p-3 flex flex-col gap-1">
-                  <span className="text-[9px] font-black uppercase tracking-wider text-[#7c7297]">Ganancia</span>
-                  <span className="text-xl font-black text-green-400 font-mono">{ganancia.toLocaleString()}</span>
-                  <span className="text-[9px] text-[#7c7297]/50">Bolivianos</span>
-                </div>
-              </div>
-
               {downloads.length === 0 ? (
-                <div className="text-center py-10 bg-[#180c35]/10 border border-dashed border-[#221443]/40 rounded-3xl">
+                <div className="text-center py-10 bg-[#2d1515]/10 border border-dashed border-[#3d1f1f]/40 rounded-3xl">
                   <span className="text-3xl">📊</span>
                   <h3 className="text-sm font-black text-white uppercase tracking-wider mt-3">Sin Historial de Ventas</h3>
-                  <p className="text-xs text-[#7c7297] mt-1.5 max-w-sm mx-auto leading-relaxed">
+                  <p className="text-xs text-[#8a7262] mt-1.5 max-w-sm mx-auto leading-relaxed">
                     Las descargas de cartones que realicen tus vendedores en el Bot de WhatsApp o los clientes en el buscador se reflejarán en este gráfico al instante.
                   </p>
                 </div>
               ) : activeChartTab === 'time' ? (
                 // 1. TIMELINE CHART (GROUPED BY DAY/HOUR)
                 <div className="flex flex-col gap-4">
-                  <div className="flex items-end justify-between h-48 pt-6 pb-2 px-4 border-b border-[#221443]/40 relative">
+                  <div className="flex items-end justify-between h-48 pt-6 pb-2 px-4 border-b border-[#3d1f1f]/40 relative">
                     {/* Y-axis gridlines */}
                     <div className="absolute left-0 right-0 top-6 bottom-8 flex flex-col justify-between pointer-events-none">
                       {[0, 0.25, 0.5, 0.75, 1].map((ratio, i) => {
                         const maxVal = salesData.length > 0 ? Math.max(...salesData.map(d => d.value)) : 0;
                         return (
-                          <div key={i} className="w-full border-t border-[#221443]/20 flex justify-between text-[9px] text-[#7c7297]/60 pt-0.5">
+                          <div key={i} className="w-full border-t border-[#3d1f1f]/20 flex justify-between text-[9px] text-[#8a7262]/60 pt-0.5">
                             <span>{Math.round(maxVal * (1 - ratio))}</span>
                           </div>
                         );
@@ -946,7 +826,7 @@ export default function SalesPanel() {
                       return (
                         <div key={i} className="flex flex-col items-center flex-1 group z-10 h-full justify-end">
                           {/* Tooltip on hover */}
-                          <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute bottom-full mb-1 bg-purple-600 text-white text-[10px] font-black py-1 px-2 rounded-lg pointer-events-none shadow-md shadow-purple-900/40">
+                          <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute bottom-full mb-1 bg-[#8B1A1A] text-white text-[10px] font-black py-1 px-2 rounded-lg pointer-events-none shadow-md shadow-[#3d1f1f]/40">
                             {d.value} {d.value === 1 ? 'cartón' : 'cartones'}
                           </div>
                           {/* Bar Container */}
@@ -954,18 +834,18 @@ export default function SalesPanel() {
                             {/* Bar */}
                             <div 
                               style={{ height: `${Math.max(6, heightPercent)}%` }} 
-                              className="w-7 sm:w-9 rounded-t-lg bg-gradient-to-t from-indigo-600 via-purple-500 to-purple-400 hover:from-indigo-500 hover:via-purple-400 hover:to-purple-300 transition-all duration-300 cursor-pointer shadow-[0_0_12px_rgba(139,92,246,0.15)] group-hover:shadow-[0_0_16px_rgba(139,92,246,0.3)] relative"
+                              className="w-7 sm:w-9 rounded-t-lg bg-gradient-to-t from-[#8B1A1A] via-[#8B1A1A] to-[#b22222] hover:from-[#a52020] hover:via-[#b22222] hover:to-[#b22222] transition-all duration-300 cursor-pointer shadow-[0_0_12px_rgba(139,26,26,0.15)] group-hover:shadow-[0_0_16px_rgba(139,26,26,0.3)] relative"
                             >
                               <div className="absolute inset-0 bg-white/5 rounded-t-lg pointer-events-none" />
                             </div>
                           </div>
                           {/* X Label */}
-                          <span className="text-[10px] text-[#7c7297] font-bold mt-2 truncate max-w-[50px]">{d.label}</span>
+                          <span className="text-[10px] text-[#8a7262] font-bold mt-2 truncate max-w-[50px]">{d.label}</span>
                         </div>
                       );
                     })}
                   </div>
-                  <div className="text-[10px] text-[#7c7297]/60 italic text-center">
+                  <div className="text-[10px] text-[#8a7262]/60 italic text-center">
                     Muestra el volumen de cartones entregados/descargados agrupados en la escala de tiempo activa.
                   </div>
                 </div>
@@ -980,17 +860,17 @@ export default function SalesPanel() {
                         <div key={i} className="flex flex-col gap-1.5">
                           <div className="flex justify-between items-center text-xs">
                             <span className="font-bold text-white flex items-center gap-2">
-                              <span className="w-5 h-5 rounded-full bg-[#180c35] border border-[#221443] text-purple-400 text-[9px] flex items-center justify-center font-black">
+                              <span className="w-5 h-5 rounded-full bg-[#2d1515] border border-[#3d1f1f] text-[#b22222] text-[9px] flex items-center justify-center font-black">
                                 {i + 1}
                               </span>
                               {d.label}
                             </span>
-                            <span className="font-bold text-amber-400 font-mono text-xs">{d.value} {d.value === 1 ? 'cartón' : 'cartones'}</span>
+                            <span className="font-bold text-[#C5A052] font-mono text-xs">{d.value} {d.value === 1 ? 'cartón' : 'cartones'}</span>
                           </div>
-                          <div className="w-full h-3 bg-[#080214] border border-[#221443]/60 rounded-full overflow-hidden relative">
+                          <div className="w-full h-3 bg-[#080214] border border-[#3d1f1f]/60 rounded-full overflow-hidden relative">
                             <div 
                               style={{ width: `${widthPercent}%` }}
-                              className="h-full bg-gradient-to-r from-indigo-600 via-purple-500 to-purple-400 rounded-full transition-all duration-500 relative"
+                              className="h-full bg-gradient-to-r from-[#8B1A1A] via-[#8B1A1A] to-[#b22222] rounded-full transition-all duration-500 relative"
                             >
                               <div className="absolute inset-0 bg-white/5 pointer-events-none" />
                             </div>
@@ -999,7 +879,7 @@ export default function SalesPanel() {
                       );
                     })}
                   </div>
-                  <div className="text-[10px] text-[#7c7297]/60 italic text-center">
+                  <div className="text-[10px] text-[#8a7262]/60 italic text-center">
                     Ranking de vendedores ordenado por mayor cantidad de cartones descargados en el bot.
                   </div>
                 </div>
@@ -1007,17 +887,17 @@ export default function SalesPanel() {
             </section>
 
             {/* ── Seller Rows Generator Section ── */}
-            <section className="bg-[#0e0524]/60 backdrop-blur-xl border border-[#221443] rounded-3xl p-5 md:p-6 shadow-[0_20px_50px_rgba(0,0,0,0.3)] flex flex-col gap-5">
-              <div className="flex items-center justify-between border-b border-[#221443]/40 pb-4">
+            <section className="bg-[#1a0e0e]/60 backdrop-blur-xl border border-[#3d1f1f] rounded-3xl p-5 md:p-6 shadow-[0_20px_50px_rgba(0,0,0,0.3)] flex flex-col gap-5">
+              <div className="flex items-center justify-between border-b border-[#3d1f1f]/40 pb-4">
                 <div className="flex items-center gap-2">
-                  <div className="w-2.5 h-2.5 rounded-full bg-purple-500 shadow-[0_0_8px_#a855f7]" />
-                  <h2 className="text-xs font-black uppercase tracking-[0.2em] text-[#7c7297]">Distribución de Filas (Vendedores)</h2>
+                  <div className="w-2.5 h-2.5 rounded-full bg-[#8B1A1A] shadow-[0_0_8px_#8B1A1A]" />
+                  <h2 className="text-xs font-black uppercase tracking-[0.2em] text-[#8a7262]">Distribución de Asignados (Vendedores)</h2>
                 </div>
                 {sellerRows.length > 0 && (
                   <div className="flex gap-2">
                     <button
                       onClick={handleCopyRowsToClipboard}
-                      className="flex items-center gap-2 h-9 px-4 bg-purple-600 hover:bg-purple-500 text-white font-black text-xs uppercase tracking-wider rounded-lg active:scale-[0.98] transition-all cursor-pointer shadow-md shadow-purple-600/10"
+                      className="flex items-center gap-2 h-9 px-4 bg-[#8B1A1A] hover:bg-[#a52020] text-white font-black text-xs uppercase tracking-wider rounded-lg active:scale-[0.98] transition-all cursor-pointer shadow-md shadow-[#8B1A1A]/10"
                     >
                       <Download className="w-3.5 h-3.5" />
                       Copiar Formato WhatsApp
@@ -1033,28 +913,28 @@ export default function SalesPanel() {
               </div>
 
               {/* Status bar / Summary pool info */}
-              <div className="bg-[#180c35]/40 border border-[#221443]/60 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="bg-[#2d1515]/40 border border-[#3d1f1f]/60 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex flex-col gap-0.5">
-                  <span className="text-[10px] font-black uppercase tracking-wider text-[#7c7297]">Estado de la Distribución</span>
+                  <span className="text-[10px] font-black uppercase tracking-wider text-[#8a7262]">Estado de la Distribución</span>
                   <div className="flex items-center gap-2 mt-1">
                     <span className="text-xs text-white font-bold">
                       {sellerRows.reduce((acc, r) => acc + r.numbers.length, 0)} asignados
                     </span>
-                    <span className="text-[#221443]">•</span>
-                    <span className="text-xs text-amber-400 font-bold">
+                    <span className="text-[#3d1f1f]">•</span>
+                    <span className="text-xs text-[#C5A052] font-bold">
                       {tickets.length - sellerRows.reduce((acc, r) => acc + r.numbers.length, 0)} libres
                     </span>
-                    <span className="text-[#221443]">•</span>
-                    <span className="text-xs text-purple-400 font-bold font-mono">
-                      {sellerRows.length} filas creadas
+                    <span className="text-[#3d1f1f]">•</span>
+                    <span className="text-xs text-[#b22222] font-bold font-mono">
+                      {sellerRows.length} asignados creados
                     </span>
                   </div>
                 </div>
 
                 {/* Generator controls */}
                 <div className="flex items-center gap-2 shrink-0">
-                  <div className="flex items-center bg-[#080214] border border-[#221443] rounded-xl px-2 h-10 shrink-0">
-                    <span className="text-[10px] font-black uppercase tracking-wider text-[#7c7297] mr-2">Filas:</span>
+                  <div className="flex items-center bg-[#080214] border border-[#3d1f1f] rounded-xl px-2 h-10 shrink-0">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-[#8a7262] mr-2">Asignados:</span>
                     <input
                       type="number"
                       min="1"
@@ -1066,20 +946,20 @@ export default function SalesPanel() {
                   </div>
                   <button
                     onClick={() => handleGenerateRows(numRowsToGen)}
-                    className="h-10 px-5 bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-purple-500 active:scale-[0.98] text-white font-black text-xs uppercase tracking-wider rounded-xl transition-all shadow-md shadow-indigo-600/10 cursor-pointer shrink-0"
+                    className="h-10 px-5 bg-gradient-to-r from-[#8B1A1A] to-[#8B1A1A] hover:from-[#a52020] hover:to-[#8B1A1A] active:scale-[0.98] text-white font-black text-xs uppercase tracking-wider rounded-xl transition-all shadow-md shadow-[#8B1A1A]/10 cursor-pointer shrink-0"
                   >
-                    Generar Filas
+                    Generar Asignados
                   </button>
                 </div>
               </div>
 
               {/* Rows List */}
               {sellerRows.length === 0 ? (
-                <div className="text-center py-10 bg-[#180c35]/10 border border-dashed border-[#221443]/40 rounded-3xl">
+                <div className="text-center py-10 bg-[#2d1515]/10 border border-dashed border-[#3d1f1f]/40 rounded-3xl">
                   <span className="text-3xl">🗳️</span>
-                  <h3 className="text-sm font-black text-white uppercase tracking-wider mt-3">Sin Filas Asignadas</h3>
-                  <p className="text-xs text-[#7c7297] mt-1.5 max-w-sm mx-auto leading-relaxed">
-                    Genera bloques de 15 cartones aleatorios únicos para entregar a tus vendedores. Las filas son completamente exclusivas y no compartirán números entre sí.
+                  <h3 className="text-sm font-black text-white uppercase tracking-wider mt-3">Sin Cartones Asignados</h3>
+                  <p className="text-xs text-[#8a7262] mt-1.5 max-w-sm mx-auto leading-relaxed">
+                    Genera bloques de 50 cartones aleatorios únicos para entregar a tus vendedores. Las filas son completamente exclusivas y no compartirán números entre sí.
                   </p>
                 </div>
               ) : (
@@ -1087,13 +967,13 @@ export default function SalesPanel() {
                   {sellerRows.map((row) => (
                     <div
                       key={row.id}
-                      className="bg-[#180c35]/30 border border-[#221443]/40 rounded-2xl p-4 flex flex-col gap-3.5 hover:border-purple-500/20 transition-all hover:bg-[#180c35]/40"
+                      className="bg-[#2d1515]/30 border border-[#3d1f1f]/40 rounded-2xl p-4 flex flex-col gap-3.5 hover:border-[#8B1A1A]/20 transition-all hover:bg-[#2d1515]/40"
                     >
                       {/* Row Header */}
-                      <div className="flex justify-between items-center border-b border-[#221443]/30 pb-2">
+                      <div className="flex justify-between items-center border-b border-[#3d1f1f]/30 pb-2">
                         <div className="flex items-center gap-1.5">
-                          <span className="text-xs font-black uppercase text-amber-400 font-mono">Fila {getEmojiNumber(row.id)}</span>
-                          <span className="text-[9px] font-bold text-[#7c7297] bg-[#180c35] border border-[#221443] px-1.5 py-0.5 rounded-md">
+                          <span className="text-xs font-black uppercase text-[#C5A052] font-mono">ASIGNADO {getEmojiNumber(row.id)}</span>
+                          <span className="text-[9px] font-bold text-[#8a7262] bg-[#2d1515] border border-[#3d1f1f] px-1.5 py-0.5 rounded-md">
                             {row.numbers.filter(num => !downloads.some(d => String(parseInt(d.ticketNumber, 10)) === String(parseInt(num, 10)))).length} faltan
                           </span>
                         </div>
@@ -1101,8 +981,8 @@ export default function SalesPanel() {
                           type="text"
                           value={row.name}
                           onChange={(e) => handleUpdateSellerName(row.id, e.target.value)}
-                          placeholder="Nombre Vendedor (ej: Mary)"
-                          className="h-7 w-44 bg-[#080214]/60 border border-[#221443] rounded-lg px-2 text-[10px] font-bold text-white placeholder:text-[#7c7297]/30 focus:outline-none focus:ring-1 focus:ring-purple-500/50 transition-all"
+                          placeholder="ID Vendedor (ej: 59178240880)"
+                          className="h-7 w-44 bg-[#080214]/60 border border-[#3d1f1f] rounded-lg px-2 text-[10px] font-bold text-white placeholder:text-[#8a7262]/30 focus:outline-none focus:ring-1 focus:ring-[#8B1A1A]/50 transition-all"
                         />
                       </div>
 
@@ -1115,8 +995,8 @@ export default function SalesPanel() {
                               key={num}
                               className={`px-2 py-0.5 rounded-lg font-bold font-mono text-[10px] tracking-wider transition-all duration-300 ${
                                 isSold
-                                  ? 'bg-red-500/10 border border-red-500/20 text-[#7c7297]/40 line-through decoration-red-500/60'
-                                  : 'bg-[#8b5cf6]/5 border border-[#8b5cf6]/10 text-white'
+                                  ? 'bg-red-500/10 border border-red-500/20 text-[#8a7262]/40 line-through decoration-red-500/60'
+                                  : 'bg-[#8B1A1A]/5 border border-[#8B1A1A]/10 text-white'
                               }`}
                             >
                               {parseInt(num, 10)}
@@ -1130,62 +1010,17 @@ export default function SalesPanel() {
               )}
             </section>
 
-            {/* ── Seller Groups Section ── */}
-            <section className="bg-[#0e0524]/60 backdrop-blur-xl border border-[#221443] rounded-3xl p-5 md:p-6 shadow-[0_20px_50px_rgba(0,0,0,0.3)] flex flex-col gap-5">
-              <div className="flex items-center justify-between border-b border-[#221443]/40 pb-4">
-                <div className="flex items-center gap-2">
-                  <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981]" />
-                  <h2 className="text-xs font-black uppercase tracking-[0.2em] text-[#7c7297]">Grupos de Vendedores</h2>
-                </div>
-                <button
-                  onClick={handleOpenCreateGroup}
-                  className="flex items-center gap-2 h-9 px-4 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs uppercase tracking-wider rounded-lg active:scale-[0.98] transition-all cursor-pointer shadow-md shadow-emerald-600/10"
-                >
-                  + Crear Grupo
-                </button>
-              </div>
-
-              {sellerGroups.length === 0 ? (
-                <div className="text-center py-10 bg-[#180c35]/10 border border-dashed border-[#221443]/40 rounded-3xl">
-                  <span className="text-3xl">👥</span>
-                  <h3 className="text-sm font-black text-white uppercase tracking-wider mt-3">Sin Grupos Creados</h3>
-                  <p className="text-xs text-[#7c7297] mt-1.5 max-w-sm mx-auto leading-relaxed">
-                    Crea grupos para que varios vendedores compartan el acceso a las mismas filas. Ideal para equipos de venta.
-                  </p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[400px] overflow-y-auto pr-1">
-                  {sellerGroups.map(group => (
-                    <div key={group.id} className="bg-[#180c35]/30 border border-emerald-500/10 rounded-2xl p-4 flex flex-col gap-3 hover:border-emerald-500/30 transition-all">
-                      <div className="flex justify-between items-center border-b border-[#221443]/30 pb-2">
-                        <span className="font-black text-white text-sm">{group.name}</span>
-                        <div className="flex gap-1">
-                          <button onClick={() => handleOpenEditGroup(group)} className="px-2 py-1 text-[10px] font-bold text-[#7c7297] hover:text-white bg-[#0e0524] border border-[#221443] rounded-lg cursor-pointer">Editar</button>
-                          <button onClick={() => handleDeleteGroup(group.id)} className="px-2 py-1 text-[10px] font-bold text-red-400 hover:text-red-300 bg-red-500/5 border border-red-500/10 rounded-lg cursor-pointer">Eliminar</button>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3 text-xs">
-                        <span className="text-[#7c7297] font-bold">{group.sellerIds.length} vendedor{group.sellerIds.length !== 1 ? 'es' : ''}</span>
-                        <span className="text-[#221443]">•</span>
-                        <span className="text-amber-400 font-bold">{group.rowIds.length} fila{group.rowIds.length !== 1 ? 's' : ''}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </section>
-
             {/* ── Downloads Table Section ── */}
-            <section className="bg-[#0e0524]/60 backdrop-blur-xl border border-[#221443] rounded-3xl p-5 md:p-6 shadow-[0_20px_50px_rgba(0,0,0,0.3)]">
-              <div className="flex items-center justify-between mb-4 border-b border-[#221443]/40 pb-4">
+            <section className="bg-[#1a0e0e]/60 backdrop-blur-xl border border-[#3d1f1f] rounded-3xl p-5 md:p-6 shadow-[0_20px_50px_rgba(0,0,0,0.3)]">
+              <div className="flex items-center justify-between mb-4 border-b border-[#3d1f1f]/40 pb-4">
                 <div className="flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-[#8b5cf6]" />
-                  <h2 className="text-xs font-black uppercase tracking-[0.2em] text-[#7c7297]">Historial de Descargas</h2>
+                  <Clock className="w-4 h-4 text-[#8B1A1A]" />
+                  <h2 className="text-xs font-black uppercase tracking-[0.2em] text-[#8a7262]">Historial de Descargas</h2>
                 </div>
                 {downloads.length > 0 && (
                   <button
                     onClick={handleExportCSV}
-                    className="flex items-center gap-2 h-9 px-4 bg-[#180c35]/50 border border-[#221443] text-[#7c7297] hover:text-white font-bold text-xs rounded-lg hover:bg-[#221443]/50 active:scale-[0.99] transition-all cursor-pointer shadow-sm"
+                    className="flex items-center gap-2 h-9 px-4 bg-[#2d1515]/50 border border-[#3d1f1f] text-[#8a7262] hover:text-white font-bold text-xs rounded-lg hover:bg-[#3d1f1f]/50 active:scale-[0.99] transition-all cursor-pointer shadow-sm"
                   >
                     <Download className="w-3.5 h-3.5" />
                     Exportar Reporte (.csv)
@@ -1195,17 +1030,17 @@ export default function SalesPanel() {
 
               {downloads.length === 0 ? (
                 <div className="text-center py-16">
-                  <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-[#180c35]/40 border border-[#221443] flex items-center justify-center shadow-inner">
-                    <Clock className="w-7 h-7 text-[#7c7297]/30" />
+                  <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-[#2d1515]/40 border border-[#3d1f1f] flex items-center justify-center shadow-inner">
+                    <Clock className="w-7 h-7 text-[#8a7262]/30" />
                   </div>
-                  <p className="text-[#7c7297]/60 text-sm font-black uppercase tracking-wider">Aún no hay descargas</p>
-                  <p className="text-[#7c7297]/40 text-xs mt-1">Los registros de boletos descargados por los clientes aparecerán aquí en vivo.</p>
+                  <p className="text-[#8a7262]/60 text-sm font-black uppercase tracking-wider">Aún no hay descargas</p>
+                  <p className="text-[#8a7262]/40 text-xs mt-1">Los registros de boletos descargados por los clientes aparecerán aquí en vivo.</p>
                 </div>
               ) : (
                 <div className="overflow-x-auto max-h-[350px] overflow-y-auto pr-1">
                   <table className="w-full text-sm border-collapse">
                     <thead>
-                      <tr className="border-b border-[#221443]/60 text-[#7c7297] text-[10px] font-black uppercase tracking-widest text-left">
+                      <tr className="border-b border-[#3d1f1f]/60 text-[#8a7262] text-[10px] font-black uppercase tracking-widest text-left">
                         <th className="py-3 px-3">#</th>
                         <th className="py-3 px-3">N° Cartón</th>
                         <th className="py-3 px-3">ID Vendedor</th>
@@ -1240,12 +1075,12 @@ export default function SalesPanel() {
                         }
 
                         return (
-                          <tr key={i} className="border-b border-[#221443]/20 hover:bg-[#180c35]/30 transition-colors">
-                            <td className="py-3 px-3 text-[#7c7297] font-bold font-mono">{(downloads.length - i).toString().padStart(3, '0')}</td>
+                          <tr key={i} className="border-b border-[#3d1f1f]/20 hover:bg-[#2d1515]/30 transition-colors">
+                            <td className="py-3 px-3 text-[#8a7262] font-bold font-mono">{(downloads.length - i).toString().padStart(3, '0')}</td>
                             <td className="py-3 px-3">
                               <div className="flex items-center gap-2">
-                                <span className="inline-flex items-center gap-1.5 bg-[#8b5cf6]/10 border border-[#8b5cf6]/20 px-3 py-1 rounded-lg text-amber-400 font-black font-mono tracking-widest text-xs">
-                                  <Hash className="w-3 h-3 text-[#8b5cf6]" />
+                                <span className="inline-flex items-center gap-1.5 bg-[#8B1A1A]/10 border border-[#8B1A1A]/20 px-3 py-1 rounded-lg text-[#C5A052] font-black font-mono tracking-widest text-xs">
+                                  <Hash className="w-3 h-3 text-[#8B1A1A]" />
                                   {d.ticketNumber}
                                 </span>
                                 {d.isGift && (
@@ -1259,19 +1094,19 @@ export default function SalesPanel() {
                                {sellerId ? (
                                  String(sellerId).split(/[\n,\s;]+/).map(x => x.trim()).filter(Boolean).map(num => `+${num}`).join(', ')
                                ) : (
-                                 <span className="text-[#7c7297]/50 italic">Desconocido</span>
+                                 <span className="text-[#8a7262]/50 italic">Desconocido</span>
                                )}
                              </td>
                             <td className="py-3 px-3">
                               {sellerName ? (
-                                <span className="inline-block bg-primary/10 border border-primary/20 text-yellow-400 font-black text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-md">
+                                <span className="inline-block bg-primary/10 border border-primary/20 text-[#dcc07a] font-black text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-md">
                                   {sellerName}
                                 </span>
                               ) : (
-                                <span className="text-[#7c7297]/50 italic text-xs">Desconocido</span>
+                                <span className="text-[#8a7262]/50 italic text-xs">Desconocido</span>
                               )}
                             </td>
-                            <td className="py-3 px-3 text-[#7c7297] font-medium font-mono text-xs">{formatted}</td>
+                            <td className="py-3 px-3 text-[#8a7262] font-medium font-mono text-xs">{formatted}</td>
                           </tr>
                         )
                       })}
@@ -1287,50 +1122,50 @@ export default function SalesPanel() {
           <div className="lg:col-span-4 flex flex-col gap-6">
             
             {/* Quick Metrics Header */}
-            <div className="bg-[#0e0524]/60 backdrop-blur-xl border border-[#221443] rounded-3xl p-5 md:p-6 shadow-[0_20px_50px_rgba(0,0,0,0.3)]">
+            <div className="bg-[#1a0e0e]/60 backdrop-blur-xl border border-[#3d1f1f] rounded-3xl p-5 md:p-6 shadow-[0_20px_50px_rgba(0,0,0,0.3)]">
               <div className="flex items-center gap-2 mb-4">
-                <BarChart3 className="w-4 h-4 text-[#8b5cf6]" />
-                <h2 className="text-xs font-black uppercase tracking-[0.2em] text-[#7c7297]">Estadísticas Básicas</h2>
+                <BarChart3 className="w-4 h-4 text-[#8B1A1A]" />
+                <h2 className="text-xs font-black uppercase tracking-[0.2em] text-[#8a7262]">Estadísticas Básicas</h2>
               </div>
 
               <div className="flex flex-col gap-5">
                 {/* Metric 1 */}
-                <div className="bg-[#180c35]/40 border border-[#221443]/60 rounded-2xl p-4 flex items-center justify-between">
+                <div className="bg-[#2d1515]/40 border border-[#3d1f1f]/60 rounded-2xl p-4 flex items-center justify-between">
                   <div>
-                    <span className="text-[10px] font-black uppercase tracking-wider text-[#7c7297]">Total Descargas</span>
-                    <p className="text-2xl font-black text-amber-400 font-mono mt-1">{totalDownloads.toLocaleString()}</p>
+                    <span className="text-[10px] font-black uppercase tracking-wider text-[#8a7262]">Total Descargas</span>
+                    <p className="text-2xl font-black text-[#C5A052] font-mono mt-1">{totalDownloads.toLocaleString()}</p>
                   </div>
-                  <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0">
-                    <Download className="w-5 h-5 text-amber-400" />
+                  <div className="w-10 h-10 rounded-xl bg-[#C5A052]/10 border border-[#C5A052]/20 flex items-center justify-center shrink-0">
+                    <Download className="w-5 h-5 text-[#C5A052]" />
                   </div>
                 </div>
 
                 {/* Metric 2 */}
-                <div className="bg-[#180c35]/40 border border-[#221443]/60 rounded-2xl p-4 flex items-center justify-between">
+                <div className="bg-[#2d1515]/40 border border-[#3d1f1f]/60 rounded-2xl p-4 flex items-center justify-between">
                   <div>
-                    <span className="text-[10px] font-black uppercase tracking-wider text-[#7c7297]">Cartones Únicos</span>
-                    <p className="text-2xl font-black text-purple-400 font-mono mt-1">{uniqueDownloads.toLocaleString()}</p>
+                    <span className="text-[10px] font-black uppercase tracking-wider text-[#8a7262]">Cartones Únicos</span>
+                    <p className="text-2xl font-black text-[#b22222] font-mono mt-1">{uniqueDownloads.toLocaleString()}</p>
                   </div>
-                  <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center shrink-0">
-                    <Hash className="w-5 h-5 text-purple-400" />
+                  <div className="w-10 h-10 rounded-xl bg-[#8B1A1A]/10 border border-[#8B1A1A]/20 flex items-center justify-center shrink-0">
+                    <Hash className="w-5 h-5 text-[#b22222]" />
                   </div>
                 </div>
 
                 {/* Progress Metric */}
-                <div className="bg-[#180c35]/40 border border-[#221443]/60 rounded-2xl p-4 flex flex-col gap-3">
+                <div className="bg-[#2d1515]/40 border border-[#3d1f1f]/60 rounded-2xl p-4 flex flex-col gap-3">
                   <div className="flex justify-between items-center">
-                    <span className="text-[10px] font-black uppercase tracking-wider text-[#7c7297]">Tasa de Descarga</span>
+                    <span className="text-[10px] font-black uppercase tracking-wider text-[#8a7262]">Tasa de Descarga</span>
                     <span className="text-sm font-black text-emerald-400 font-mono">{percentage}%</span>
                   </div>
                   
-                  <div className="w-full h-2 bg-[#080214] rounded-full overflow-hidden border border-[#221443]/40">
+                  <div className="w-full h-2 bg-[#080214] rounded-full overflow-hidden border border-[#3d1f1f]/40">
                     <div
                       className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full transition-all duration-700 ease-out"
                       style={{ width: `${percentage}%` }}
                     />
                   </div>
 
-                  <span className="text-[10px] text-[#7c7297]/60 font-semibold italic text-center">
+                  <span className="text-[10px] text-[#8a7262]/60 font-semibold italic text-center">
                     Descargas únicas vs cartones totales cargados
                   </span>
                 </div>
@@ -1338,21 +1173,21 @@ export default function SalesPanel() {
             </div>
 
             {/* Quick Actions Panel */}
-            <div className="bg-[#0e0524]/60 backdrop-blur-xl border border-[#221443] rounded-3xl p-5 md:p-6 shadow-[0_20px_50px_rgba(0,0,0,0.3)]">
+            <div className="bg-[#1a0e0e]/60 backdrop-blur-xl border border-[#3d1f1f] rounded-3xl p-5 md:p-6 shadow-[0_20px_50px_rgba(0,0,0,0.3)]">
               <div className="flex items-center gap-2 mb-4">
-                <Database className="w-4 h-4 text-[#8b5cf6]" />
-                <h2 className="text-xs font-black uppercase tracking-[0.2em] text-[#7c7297]">Servicio del Servidor</h2>
+                <Database className="w-4 h-4 text-[#8B1A1A]" />
+                <h2 className="text-xs font-black uppercase tracking-[0.2em] text-[#8a7262]">Servicio del Servidor</h2>
               </div>
-              <div className="text-xs text-[#7c7297] leading-relaxed flex flex-col gap-2.5">
-                <div className="flex justify-between border-b border-[#221443]/30 pb-2">
+              <div className="text-xs text-[#8a7262] leading-relaxed flex flex-col gap-2.5">
+                <div className="flex justify-between border-b border-[#3d1f1f]/30 pb-2">
                   <span>Tipo de almacenamiento</span>
                   <span className="text-white font-bold font-mono">Local / Client-side</span>
                 </div>
-                <div className="flex justify-between border-b border-[#221443]/30 pb-2">
+                <div className="flex justify-between border-b border-[#3d1f1f]/30 pb-2">
                   <span>Persistencia activa</span>
                   <span className="text-emerald-400 font-bold">Habilitado</span>
                 </div>
-                <div className="flex justify-between border-b border-[#221443]/30 pb-2">
+                <div className="flex justify-between border-b border-[#3d1f1f]/30 pb-2">
                   <span>Modo del Buscador</span>
                   <span className={totalTickets > 0 ? "text-emerald-400 font-bold" : "text-red-400 font-bold"}>
                     {totalTickets > 0 ? "En línea" : "Fuera de línea"}
@@ -1362,66 +1197,66 @@ export default function SalesPanel() {
             </div>
 
             {/* Player Habilitation Panel */}
-            <div className="bg-[#0e0524]/60 backdrop-blur-xl border border-[#221443] rounded-3xl p-5 md:p-6 shadow-[0_20px_50px_rgba(0,0,0,0.3)] flex flex-col gap-4">
-              <div className="flex items-center gap-2 border-b border-[#221443]/30 pb-3">
-                <div className="w-2 h-2 rounded-full bg-purple-500 shadow-[0_0_8px_#a855f7]" />
-                <h2 className="text-xs font-black uppercase tracking-[0.2em] text-[#7c7297]">Habilitación de Vendedores (Bot)</h2>
+            <div className="bg-[#1a0e0e]/60 backdrop-blur-xl border border-[#3d1f1f] rounded-3xl p-5 md:p-6 shadow-[0_20px_50px_rgba(0,0,0,0.3)] flex flex-col gap-4">
+              <div className="flex items-center gap-2 border-b border-[#3d1f1f]/30 pb-3">
+                <div className="w-2 h-2 rounded-full bg-[#8B1A1A] shadow-[0_0_8px_#8B1A1A]" />
+                <h2 className="text-xs font-black uppercase tracking-[0.2em] text-[#8a7262]">Habilitación de Vendedores (Bot)</h2>
               </div>
               
               <div className="flex flex-col gap-3">
-                <p className="text-xs text-[#7c7297] leading-relaxed">
+                <p className="text-xs text-[#8a7262] leading-relaxed">
                   Registra un vendedor con su número de WhatsApp (ID) para habilitar el bot de descargas. Los campos de Nombre, Celular y CI son 100% opcionales.
                 </p>
                 
                 {/* Form fields */}
-                <div className="flex flex-col gap-2 bg-[#180c35]/20 border border-[#221443]/40 p-3.5 rounded-2xl">
+                <div className="flex flex-col gap-2 bg-[#2d1515]/20 border border-[#3d1f1f]/40 p-3.5 rounded-2xl">
                   <div>
-                    <label className="text-[9px] font-black uppercase tracking-wider text-[#7c7297] block mb-1">ID WhatsApp (Obligatorio)</label>
+                    <label className="text-[9px] font-black uppercase tracking-wider text-[#8a7262] block mb-1">ID WhatsApp (Obligatorio)</label>
                     <textarea
                       value={newIdInput}
                       onChange={(e) => setNewIdInput(e.target.value)}
                       placeholder="Ej:&#10;59178240880&#10;59177112233"
                       rows={2}
-                      className="w-full bg-[#080214]/60 border border-[#221443] rounded-xl px-3 py-2 text-xs font-bold text-white placeholder:text-[#7c7297]/30 focus:outline-none focus:ring-1 focus:ring-purple-500/50 transition-all font-mono resize-y min-h-[54px]"
+                      className="w-full bg-[#080214]/60 border border-[#3d1f1f] rounded-xl px-3 py-2 text-xs font-bold text-white placeholder:text-[#8a7262]/30 focus:outline-none focus:ring-1 focus:ring-[#8B1A1A]/50 transition-all font-mono resize-y min-h-[54px]"
                     />
                   </div>
 
                   <div className="grid grid-cols-3 gap-2">
                     <div className="col-span-1">
-                      <label className="text-[9px] font-black uppercase tracking-wider text-[#7c7297] block mb-1">Nombre</label>
+                      <label className="text-[9px] font-black uppercase tracking-wider text-[#8a7262] block mb-1">Nombre</label>
                       <input
                         type="text"
                         value={newSellerName}
                         onChange={(e) => setNewSellerName(e.target.value)}
                         placeholder="Opcional"
-                        className="w-full h-8 bg-[#080214]/60 border border-[#221443] rounded-lg px-2 text-[10px] font-bold text-white placeholder:text-[#7c7297]/20 focus:outline-none focus:ring-1 focus:ring-purple-500/50 transition-all"
+                        className="w-full h-8 bg-[#080214]/60 border border-[#3d1f1f] rounded-lg px-2 text-[10px] font-bold text-white placeholder:text-[#8a7262]/20 focus:outline-none focus:ring-1 focus:ring-[#8B1A1A]/50 transition-all"
                       />
                     </div>
                     <div className="col-span-1">
-                      <label className="text-[9px] font-black uppercase tracking-wider text-[#7c7297] block mb-1">Celular</label>
+                      <label className="text-[9px] font-black uppercase tracking-wider text-[#8a7262] block mb-1">Celular</label>
                       <input
                         type="text"
                         value={newSellerCell}
                         onChange={(e) => setNewSellerCell(e.target.value)}
                         placeholder="Opcional"
-                        className="w-full h-8 bg-[#080214]/60 border border-[#221443] rounded-lg px-2 text-[10px] font-bold text-white placeholder:text-[#7c7297]/20 focus:outline-none focus:ring-1 focus:ring-purple-500/50 transition-all font-mono"
+                        className="w-full h-8 bg-[#080214]/60 border border-[#3d1f1f] rounded-lg px-2 text-[10px] font-bold text-white placeholder:text-[#8a7262]/20 focus:outline-none focus:ring-1 focus:ring-[#8B1A1A]/50 transition-all font-mono"
                       />
                     </div>
                     <div className="col-span-1">
-                      <label className="text-[9px] font-black uppercase tracking-wider text-[#7c7297] block mb-1">C.I.</label>
+                      <label className="text-[9px] font-black uppercase tracking-wider text-[#8a7262] block mb-1">C.I.</label>
                       <input
                         type="text"
                         value={newSellerCI}
                         onChange={(e) => setNewSellerCI(e.target.value)}
                         placeholder="Opcional"
-                        className="w-full h-8 bg-[#080214]/60 border border-[#221443] rounded-lg px-2 text-[10px] font-bold text-white placeholder:text-[#7c7297]/20 focus:outline-none focus:ring-1 focus:ring-purple-500/50 transition-all font-mono"
+                        className="w-full h-8 bg-[#080214]/60 border border-[#3d1f1f] rounded-lg px-2 text-[10px] font-bold text-white placeholder:text-[#8a7262]/20 focus:outline-none focus:ring-1 focus:ring-[#8B1A1A]/50 transition-all font-mono"
                       />
                     </div>
                   </div>
 
                   <button
                     onClick={() => handleEnableId(newIdInput)}
-                    className="w-full h-9 mt-1.5 bg-purple-600 hover:bg-purple-500 active:scale-[0.98] text-white font-black text-xs uppercase tracking-wider rounded-xl transition-all shadow-md shadow-purple-600/15 cursor-pointer"
+                    className="w-full h-9 mt-1.5 bg-[#8B1A1A] hover:bg-[#a52020] active:scale-[0.98] text-white font-black text-xs uppercase tracking-wider rounded-xl transition-all shadow-md shadow-[#8B1A1A]/15 cursor-pointer"
                   >
                     Registrar y Habilitar
                   </button>
@@ -1430,15 +1265,15 @@ export default function SalesPanel() {
 
               {/* Sellers List area */}
               <div className="mt-2 flex flex-col gap-2">
-                <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-wider text-[#7c7297]">
+                <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-wider text-[#8a7262]">
                   <span>Lista de Habilitados</span>
-                  <span className="font-mono text-purple-400">({authorizedIds.length})</span>
+                  <span className="font-mono text-[#b22222]">({authorizedIds.length})</span>
                 </div>
                 
                 {authorizedIds.length === 0 ? (
-                  <div className="text-center py-6 bg-[#180c35]/20 border border-dashed border-[#221443] rounded-xl">
-                    <p className="text-[#7c7297]/50 text-[10px] font-black uppercase tracking-wider">Ninguno Habilitado</p>
-                    <p className="text-[#7c7297]/30 text-[9px] mt-0.5">El bot no entregará cartones a nadie hasta registrar un vendedor.</p>
+                  <div className="text-center py-6 bg-[#2d1515]/20 border border-dashed border-[#3d1f1f] rounded-xl">
+                    <p className="text-[#8a7262]/50 text-[10px] font-black uppercase tracking-wider">Ninguno Habilitado</p>
+                    <p className="text-[#8a7262]/30 text-[9px] mt-0.5">El bot no entregará cartones a nadie hasta registrar un vendedor.</p>
                   </div>
                 ) : (
                   <div className="flex flex-col gap-2.5 max-h-[300px] overflow-y-auto pr-1">
@@ -1452,38 +1287,38 @@ export default function SalesPanel() {
 
                       if (isEditing) {
                         return (
-                          <div key={sId} className="bg-[#180c35]/50 border border-purple-500/30 rounded-2xl p-3.5 flex flex-col gap-3.5 animate-slide-in">
-                            <div className="flex justify-between items-center border-b border-[#221443]/30 pb-1.5">
-                              <span className="text-[10px] font-black uppercase tracking-wider text-purple-300 font-mono">Editar +{sId}</span>
+                          <div key={sId} className="bg-[#2d1515]/50 border border-[#8B1A1A]/30 rounded-2xl p-3.5 flex flex-col gap-3.5 animate-slide-in">
+                            <div className="flex justify-between items-center border-b border-[#3d1f1f]/30 pb-1.5">
+                              <span className="text-[10px] font-black uppercase tracking-wider text-[#b22222] font-mono">Editar +{sId}</span>
                             </div>
                             
                             <div className="flex flex-col gap-2">
                               <div>
-                                <label className="text-[9px] font-black uppercase tracking-wider text-[#7c7297] block mb-0.5">Nombre</label>
+                                <label className="text-[9px] font-black uppercase tracking-wider text-[#8a7262] block mb-0.5">Nombre</label>
                                 <input
                                   type="text"
                                   value={editName}
                                   onChange={(e) => setEditName(e.target.value)}
-                                  className="w-full h-7 bg-[#080214]/60 border border-[#221443] rounded-lg px-2 text-[10px] text-white focus:outline-none focus:ring-1 focus:ring-purple-500/50"
+                                  className="w-full h-7 bg-[#080214]/60 border border-[#3d1f1f] rounded-lg px-2 text-[10px] text-white focus:outline-none focus:ring-1 focus:ring-[#8B1A1A]/50"
                                 />
                               </div>
                               <div className="grid grid-cols-2 gap-2">
                                 <div>
-                                  <label className="text-[9px] font-black uppercase tracking-wider text-[#7c7297] block mb-0.5">Celular</label>
+                                  <label className="text-[9px] font-black uppercase tracking-wider text-[#8a7262] block mb-0.5">Celular</label>
                                   <input
                                     type="text"
                                     value={editCell}
                                     onChange={(e) => setEditCell(e.target.value)}
-                                    className="w-full h-7 bg-[#080214]/60 border border-[#221443] rounded-lg px-2 text-[10px] font-mono text-white focus:outline-none focus:ring-1 focus:ring-purple-500/50"
+                                    className="w-full h-7 bg-[#080214]/60 border border-[#3d1f1f] rounded-lg px-2 text-[10px] font-mono text-white focus:outline-none focus:ring-1 focus:ring-[#8B1A1A]/50"
                                   />
                                 </div>
                                 <div>
-                                  <label className="text-[9px] font-black uppercase tracking-wider text-[#7c7297] block mb-0.5">C.I.</label>
+                                  <label className="text-[9px] font-black uppercase tracking-wider text-[#8a7262] block mb-0.5">C.I.</label>
                                   <input
                                     type="text"
                                     value={editCI}
                                     onChange={(e) => setEditCI(e.target.value)}
-                                    className="w-full h-7 bg-[#080214]/60 border border-[#221443] rounded-lg px-2 text-[10px] font-mono text-white focus:outline-none focus:ring-1 focus:ring-purple-500/50"
+                                    className="w-full h-7 bg-[#080214]/60 border border-[#3d1f1f] rounded-lg px-2 text-[10px] font-mono text-white focus:outline-none focus:ring-1 focus:ring-[#8B1A1A]/50"
                                   />
                                 </div>
                               </div>
@@ -1509,30 +1344,30 @@ export default function SalesPanel() {
                       }
 
                       return (
-                        <div key={sId} className="bg-[#180c35]/30 border border-[#221443]/40 rounded-2xl p-3 flex flex-col gap-2 hover:bg-[#180c35]/40 transition-all relative group">
+                        <div key={sId} className="bg-[#2d1515]/30 border border-[#3d1f1f]/40 rounded-2xl p-3 flex flex-col gap-2 hover:bg-[#2d1515]/40 transition-all relative group">
                           <div className="flex justify-between items-start">
                             <div className="flex flex-col">
                               {sName ? (
-                                <span className="text-xs font-black uppercase text-amber-400 tracking-wide">{sName}</span>
+                                <span className="text-xs font-black uppercase text-[#C5A052] tracking-wide">{sName}</span>
                               ) : (
-                                <span className="text-xs font-black uppercase text-[#7c7297] italic tracking-wide">Sin Nombre</span>
+                                <span className="text-xs font-black uppercase text-[#8a7262] italic tracking-wide">Sin Nombre</span>
                               )}
                               {String(sId || '').split(/[\n,\s;]+/).map(x => x.trim()).filter(Boolean).map(num => (
-                                <span key={num} className="font-mono text-[10px] text-purple-300 font-bold tracking-wider mt-0.5 block">+{num}</span>
+                                <span key={num} className="font-mono text-[10px] text-[#b22222] font-bold tracking-wider mt-0.5 block">+{num}</span>
                               ))}
                             </div>
                             
                             <div className="flex items-center gap-1.5">
                               <button
                                 onClick={() => startEditing(seller)}
-                                className="p-1 hover:bg-purple-500/10 text-[#7c7297] hover:text-purple-400 rounded-lg transition-all cursor-pointer"
+                                className="p-1 hover:bg-[#a52020]/10 text-[#8a7262] hover:text-[#b22222] rounded-lg transition-all cursor-pointer"
                                 title="Editar Datos"
                               >
                                 <Edit className="w-3.5 h-3.5" />
                               </button>
                               <button
                                 onClick={() => handleDisableId(sId)}
-                                className="p-1 hover:bg-red-500/10 text-[#7c7297] hover:text-red-400 rounded-lg transition-all cursor-pointer"
+                                className="p-1 hover:bg-red-500/10 text-[#8a7262] hover:text-red-400 rounded-lg transition-all cursor-pointer"
                                 title="Deshabilitar Vendedor"
                               >
                                 <X className="w-3.5 h-3.5" />
@@ -1541,15 +1376,15 @@ export default function SalesPanel() {
                           </div>
 
                           {(sCell || sCI) && (
-                            <div className="flex gap-4 border-t border-[#221443]/30 pt-1.5 mt-0.5 text-[9px] text-[#7c7297] font-semibold font-mono">
+                            <div className="flex gap-4 border-t border-[#3d1f1f]/30 pt-1.5 mt-0.5 text-[9px] text-[#8a7262] font-semibold font-mono">
                               {sCell && (
                                 <span className="flex items-center gap-1">
-                                  <span className="text-purple-400">Cel:</span> {sCell}
+                                  <span className="text-[#b22222]">Cel:</span> {sCell}
                                 </span>
                               )}
                               {sCI && (
                                 <span className="flex items-center gap-1">
-                                  <span className="text-purple-400">CI:</span> {sCI}
+                                  <span className="text-[#b22222]">CI:</span> {sCI}
                                 </span>
                               )}
                             </div>
@@ -1567,9 +1402,9 @@ export default function SalesPanel() {
         </div>
 
         {/* Footer */}
-        <footer className="text-center mt-12 border-t border-[#221443]/30 pt-6">
-          <p className="text-[#7c7297]/30 text-[9px] font-black uppercase tracking-[0.35em]">
-            Panel de Administración • Solibingo v3.0
+        <footer className="text-center mt-12 border-t border-[#3d1f1f]/30 pt-6">
+          <p className="text-[#8a7262]/30 text-[9px] font-black uppercase tracking-[0.35em]">
+            Panel de Administración • Bolillo de la Suerte v3.0
           </p>
         </footer>
 
@@ -1578,14 +1413,14 @@ export default function SalesPanel() {
       {/* ── Confirm Delete Modal ── */}
       {showConfirmDelete && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-md z-50 flex items-center justify-center p-4">
-          <div className="bg-[#0e0524] border border-red-500/20 rounded-3xl p-6 max-w-md w-full shadow-[0_30px_60px_rgba(220,38,38,0.15)] animate-bounce-in">
+          <div className="bg-[#1a0e0e] border border-red-500/20 rounded-3xl p-6 max-w-md w-full shadow-[0_30px_60px_rgba(220,38,38,0.15)] animate-bounce-in">
             <div className="flex items-center gap-3.5 mb-4">
               <div className="w-12 h-12 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center shrink-0">
                 <ShieldAlert className="w-6 h-6 text-red-500" />
               </div>
               <div>
                 <h3 className="text-lg font-black text-white">¿Quitar Base de Datos?</h3>
-                <p className="text-xs text-[#7c7297]">Esta acción eliminará todos los registros</p>
+                <p className="text-xs text-[#8a7262]">Esta acción eliminará todos los registros</p>
               </div>
             </div>
             
@@ -1598,7 +1433,7 @@ export default function SalesPanel() {
             <div className="flex gap-3">
               <button
                 onClick={() => setShowConfirmDelete(false)}
-                className="flex-1 h-11 bg-[#180c35]/60 border border-[#221443] text-[#7c7297] hover:text-white font-bold text-xs uppercase tracking-wider rounded-xl hover:bg-[#221443]/50 active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                className="flex-1 h-11 bg-[#2d1515]/60 border border-[#3d1f1f] text-[#8a7262] hover:text-white font-bold text-xs uppercase tracking-wider rounded-xl hover:bg-[#3d1f1f]/50 active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-1.5"
               >
                 <X className="w-4 h-4" />
                 Cancelar
@@ -1618,19 +1453,19 @@ export default function SalesPanel() {
       {/* ── Confirm Reset Downloads Modal ── */}
       {showConfirmReset && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-md z-50 flex items-center justify-center p-4">
-          <div className="bg-[#0e0524] border border-amber-500/20 rounded-3xl p-6 max-w-md w-full shadow-[0_30px_60px_rgba(245,158,11,0.15)] animate-bounce-in">
+          <div className="bg-[#1a0e0e] border border-[#C5A052]/20 rounded-3xl p-6 max-w-md w-full shadow-[0_30px_60px_rgba(197,160,82,0.15)] animate-bounce-in">
             <div className="flex items-center gap-3.5 mb-4">
-              <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0">
-                <Clock className="w-6 h-6 text-amber-500" />
+              <div className="w-12 h-12 rounded-2xl bg-[#C5A052]/10 border border-[#C5A052]/20 flex items-center justify-center shrink-0">
+                <Clock className="w-6 h-6 text-[#C5A052]" />
               </div>
               <div>
                 <h3 className="text-lg font-black text-white">¿Restablecer Descargas a 0?</h3>
-                <p className="text-xs text-[#7c7297]">Esta acción reiniciará las estadísticas de ventas</p>
+                <p className="text-xs text-[#8a7262]">Esta acción reiniciará las estadísticas de ventas</p>
               </div>
             </div>
             
-            <div className="bg-amber-500/5 border border-amber-500/10 rounded-2xl p-4 mb-5">
-              <p className="text-xs text-amber-300 leading-relaxed font-semibold">
+            <div className="bg-[#C5A052]/5 border border-[#C5A052]/10 rounded-2xl p-4 mb-5">
+              <p className="text-xs text-[#e8cf90] leading-relaxed font-semibold">
                 Se eliminará todo el historial de <span className="font-bold text-white font-mono">{totalDownloads} descargas</span> y los contadores volverán a 0. La base de datos de <span className="font-bold text-white">{totalTickets.toLocaleString()} cartones</span> se mantendrá intacta y activa.
               </p>
             </div>
@@ -1638,115 +1473,17 @@ export default function SalesPanel() {
             <div className="flex gap-3">
               <button
                 onClick={() => setShowConfirmReset(false)}
-                className="flex-1 h-11 bg-[#180c35]/60 border border-[#221443] text-[#7c7297] hover:text-white font-bold text-xs uppercase tracking-wider rounded-xl hover:bg-[#221443]/50 active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                className="flex-1 h-11 bg-[#2d1515]/60 border border-[#3d1f1f] text-[#8a7262] hover:text-white font-bold text-xs uppercase tracking-wider rounded-xl hover:bg-[#3d1f1f]/50 active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-1.5"
               >
                 <X className="w-4 h-4" />
                 Cancelar
               </button>
               <button
                 onClick={handleResetDownloads}
-                className="flex-1 h-11 bg-gradient-to-r from-amber-600 to-amber-500 text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-amber-600/20 hover:shadow-amber-600/40 active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                className="flex-1 h-11 bg-gradient-to-r from-[#a8863e] to-[#C5A052] text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-[#a8863e]/20 hover:shadow-[#a8863e]/40 active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-1.5"
               >
                 <Trash2 className="w-4 h-4" />
                 Confirmar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── Group Create/Edit Modal ── */}
-      {showGroupModal && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-[#0e0524] border border-emerald-500/20 rounded-3xl p-6 max-w-lg w-full shadow-[0_30px_60px_rgba(16,185,129,0.1)] animate-bounce-in max-h-[85vh] overflow-y-auto">
-            <div className="flex items-center gap-3.5 mb-5">
-              <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0">
-                <span className="text-xl">👥</span>
-              </div>
-              <div>
-                <h3 className="text-lg font-black text-white">{editingGroup ? 'Editar Grupo' : 'Crear Grupo'}</h3>
-                <p className="text-xs text-[#7c7297]">Configura vendedores y filas compartidas</p>
-              </div>
-            </div>
-
-            {/* Group Name */}
-            <div className="mb-4">
-              <label className="text-[10px] font-black uppercase tracking-wider text-[#7c7297] block mb-1.5">Nombre del Grupo</label>
-              <input
-                type="text"
-                value={groupForm.name}
-                onChange={e => setGroupForm(prev => ({ ...prev, name: e.target.value }))}
-                placeholder="Ej: Zona Norte"
-                className="w-full h-10 bg-[#080214] border border-[#221443] rounded-xl px-3 text-sm font-bold text-white placeholder:text-[#7c7297]/30 focus:outline-none focus:ring-1 focus:ring-emerald-500/50"
-              />
-            </div>
-
-            {/* Select Sellers */}
-            <div className="mb-4">
-              <label className="text-[10px] font-black uppercase tracking-wider text-[#7c7297] block mb-1.5">
-                Vendedores ({groupForm.sellerIds.length}/20)
-              </label>
-              <div className="bg-[#080214] border border-[#221443] rounded-xl p-2 max-h-28 overflow-y-auto flex flex-wrap gap-1.5">
-                {authorizedIds.length === 0 && <span className="text-[10px] text-[#7c7297] p-2">No hay vendedores registrados</span>}
-                {authorizedIds.map(seller => {
-                  const sId = typeof seller === 'object' && seller !== null ? seller.id : seller
-                  const sName = typeof seller === 'object' && seller !== null ? (seller.name || seller.cellphone || sId) : sId
-                  const selected = groupForm.sellerIds.includes(sId)
-                  return (
-                    <button
-                      key={sId}
-                      onClick={() => handleToggleSeller(sId)}
-                      className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
-                        selected
-                          ? 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-400'
-                          : 'bg-[#180c35]/40 border border-[#221443]/40 text-[#7c7297] hover:border-emerald-500/20 hover:text-white'
-                      }`}
-                    >
-                      {sName}
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-
-            {/* Select Rows */}
-            <div className="mb-5">
-              <label className="text-[10px] font-black uppercase tracking-wider text-[#7c7297] block mb-1.5">
-                Filas ({groupForm.rowIds.length}/50)
-              </label>
-              <div className="bg-[#080214] border border-[#221443] rounded-xl p-2 max-h-28 overflow-y-auto flex flex-wrap gap-1.5">
-                {sellerRows.length === 0 && <span className="text-[10px] text-[#7c7297] p-2">No hay filas generadas</span>}
-                {sellerRows.map(row => {
-                  const selected = groupForm.rowIds.includes(row.id)
-                  return (
-                    <button
-                      key={row.id}
-                      onClick={() => handleToggleRow(row.id)}
-                      className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
-                        selected
-                          ? 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-400'
-                          : 'bg-[#180c35]/40 border border-[#221443]/40 text-[#7c7297] hover:border-emerald-500/20 hover:text-white'
-                      }`}
-                    >
-                      Fila {row.id}{row.name ? ` (${row.name})` : ''}
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowGroupModal(false)}
-                className="flex-1 h-11 bg-[#180c35]/60 border border-[#221443] text-[#7c7297] hover:text-white font-bold text-xs uppercase tracking-wider rounded-xl hover:bg-[#221443]/50 active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-1.5"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={handleSaveGroup}
-                className="flex-1 h-11 bg-gradient-to-r from-emerald-600 to-emerald-500 text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-emerald-600/20 hover:shadow-emerald-600/40 active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-1.5"
-              >
-                {editingGroup ? 'Guardar Cambios' : 'Crear Grupo'}
               </button>
             </div>
           </div>
