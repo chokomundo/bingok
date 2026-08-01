@@ -83,11 +83,24 @@ const AVAILABLE_PATTERNS = [
   { id: 16, name: 'Figura', rule: 'STATIC', pattern: [[1,1,1,1,1], [1,1,1,1,1], [1,1,0,1,1], [1,0,0,0,0], [1,0,0,0,0]] },
 ]
 
+let audioCtx = null;
+const getAudioCtx = () => {
+  if (typeof window === 'undefined') return null;
+  const AudioContext = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContext) return null;
+  if (!audioCtx) {
+    audioCtx = new AudioContext();
+  }
+  if (audioCtx.state === 'suspended') {
+    audioCtx.resume().catch(() => {});
+  }
+  return audioCtx;
+};
+
 const playSpinSound = () => {
   try {
-    const AudioContext = window.AudioContext || window.webkitAudioContext;
-    if (!AudioContext) return;
-    const ctx = new AudioContext();
+    const ctx = getAudioCtx();
+    if (!ctx) return;
     
     // Play a sequence of ticking sounds simulating a rolling drum
     let time = ctx.currentTime;
@@ -113,9 +126,8 @@ const playSpinSound = () => {
 
 const playRevealSound = () => {
   try {
-    const AudioContext = window.AudioContext || window.webkitAudioContext;
-    if (!AudioContext) return;
-    const ctx = new AudioContext();
+    const ctx = getAudioCtx();
+    if (!ctx) return;
     
     // Play a shiny double-chime when a ball is selected
     const time = ctx.currentTime;
@@ -154,7 +166,7 @@ const playNumberVoice = (num) => {
   if (!num || !voiceAudio) return
   try {
     voiceAudio.pause()
-    voiceAudio.src = `/audio/numeros/${num}.mp3`
+    voiceAudio.src = `${import.meta.env.BASE_URL}audio/numeros/${num}.mp3`
     voiceAudio.currentTime = 0
     voiceAudio.volume = 1.0
     const promise = voiceAudio.play()
